@@ -36,13 +36,13 @@ There was no catch-all for unrepresented modifications and no safe manual-review
 
 ## Rewrite outcome
 
-The new engine:
+The current engine:
 
-1. resolves the exact vehicle mapping;
-2. evaluates every represented modification against every principal category;
-3. finds the first legal category that also contains a vehicle placement;
-4. displays blockers for lower categories;
+1. resolves the exact year, model family, and year-specific package from a reviewed catalog;
+2. evaluates every represented modification against every principal category without consulting Appendix A;
+3. records the minimum legal category from the modification set alone;
+4. intersects those legal categories with exact vehicle placements and chooses the least-prepared match;
 5. keeps supplemental categories separate;
 6. returns manual review when details or data are insufficient;
-7. applies versioned current overrides before the broad imported fallback;
+7. refuses to use the broad imported fallback for either selector choices or class placement;
 8. includes regression tests, CI, GitHub Pages deployment, and data-maintenance documentation.

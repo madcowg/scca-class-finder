@@ -8,9 +8,9 @@ The first version had a structural classing error: the user selected a target pr
 
 This rewrite:
 
-- finds the exact make/model/year mapping first;
-- evaluates every represented modification through the principal category ladder;
-- selects the least-prepared category that is both legal and listed for the car;
+- resolves the exact year, make, model family, and year-specific package before class placement;
+- derives legal preparation categories from the modifications first, without using Appendix A to make that decision;
+- selects the least-prepared category that is both legal for the build and listed for the exact car;
 - shows why lower categories failed;
 - labels partially audited mappings instead of auto-promoting them into unverified categories;
 - keeps supplemental categories separate;
@@ -54,9 +54,10 @@ Vite uses `base: "./"`, so the build works from a repository subpath.
 
 - `src/lib/classifier.ts` - pure classification engine
 - `src/lib/rules.ts` - explicit modification/category allowance profiles
-- `src/lib/vehicleData.ts` - vehicle lookup and data-layer handling
-- `src/data/vehicles.generated.json` - broad selection catalog only; never used as a class placement
-- `src/data/overrides2026.ts` - limited 2026 Street-only overlay
+- `src/lib/vehicleData.ts` - exact reviewed vehicle lookup and family/package handling
+- `src/data/reviewed-vehicles2026.json` - explicit reviewed selector entries and current placements
+- `src/data/overrides2026.ts` - typed source notes and coverage layers for the reviewed entries
+- `src/data/vehicles.generated.json` - retained legacy import for provenance and validation only; never used by the runtime selector or classifier
 - `src/components/` - redesigned responsive interface
 - `src/lib/classifier.test.ts` - regression tests
 - `docs/CODE_REVIEW.md` - defects found in the original scaffold
@@ -78,10 +79,10 @@ Important date note:
 
 - The June 2026 and future-dated August 2026 Fastrack Street tables include proposals for `2027` and `2028`. They are not treated as current 2026 classifications in this app unless and until they appear as effective rulebook text or current-year class listings.
 
-The broad vehicle catalog is retained from the MIT-licensed `Bjorn248/scca_classifier` project only to
-help populate year, make, model-family, and submodel choices. It is never used to assign a class.
-Runtime class placements come from the reviewed entries in `src/data/overrides2026.ts`; anything else
-stops at manual review. See `THIRD_PARTY_NOTICES.md`.
+The legacy vehicle import is retained from the MIT-licensed `Bjorn248/scca_classifier` project for
+provenance only. It does not populate the live selector and it is never used to assign a class.
+The live selector and runtime class placements come from the explicit reviewed entries in
+`src/data/overrides2026.ts`; anything else stops at manual review. See `THIRD_PARTY_NOTICES.md`.
 
 The app intentionally labels its data coverage. A 2026 Street-only entry will not be auto-promoted
 into a modified category without a verified higher-category placement.

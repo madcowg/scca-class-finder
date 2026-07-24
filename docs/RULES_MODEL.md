@@ -2,12 +2,13 @@
 
 ## The classification sequence
 
-The app separates two questions that the original scaffold combined incorrectly:
+The app separates three questions that the original scaffold combined incorrectly:
 
-1. **Where is this exact vehicle listed?**  Appendix A places a make/model/year/trim in one or more classes across categories.
-2. **What is the least-prepared category that permits the complete build?**  Sections 13 through 18 govern preparation.
+1. **What exact vehicle is being discussed?** The reviewed catalog resolves year, make, model family, and any year-specific trim, engine, drivetrain, or package.
+2. **What preparation categories permit the complete build?** Sections 13 through 18 are evaluated independently from vehicle placement.
+3. **Where is that exact vehicle listed?** Appendix A or another reviewed official placement is then intersected with the legal preparation categories.
 
-The engine evaluates every modification against each principal category in order:
+The engine evaluates every modification against every principal category. The displayed category order is a least-prepared preference order, not a claim that SCCA permissions form a linear ladder:
 
 1. Street
 2. Street Touring
@@ -16,10 +17,12 @@ The engine evaluates every modification against each principal category in order
 5. Prepared
 6. Modified
 
-It returns the first category that is both:
+It returns the first category in that preference order that is both:
 
 - legal for every represented modification; and
 - present in the vehicle mapping.
+
+The result also exposes the **minimum legal category** from the modification set alone. If that category has no reviewed placement for the exact vehicle, the engine may use a later category only when that category is independently legal and independently listed. It never uses a higher class listing to make a modification legal.
 
 Supplemental categories such as CAM, Xtreme Street, EVX, Solo Spec Coupe, and Club Spec are presented separately because each has its own eligibility and preparation path.
 
@@ -36,8 +39,8 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 ## Data layers
 
-- `vehicles.generated.json`: broad selection catalog imported from the MIT-licensed `Bjorn248/scca_classifier` project. Its class arrays are not used by the runtime classifier.
-- `overrides2026.ts`: the reviewed first-party exact placements used by the runtime classifier, cross-checked against official 2026 Appendix A / Appendix B text. It intentionally does not copy previous-year or third-party higher-category mappings forward.
+- `vehicles.generated.json`: legacy import retained for provenance and data-integrity checks only. It is not used by the live selector or runtime classifier.
+- `reviewed-vehicles2026.json` and `overrides2026.ts`: explicit reviewed family/package entries and first-party exact placements used by the runtime classifier. They intentionally do not copy previous-year or third-party mappings forward.
 - `rules.ts`: explicit category allowances for the user-facing modification profiles.
 
 ## Current source-handling rules
@@ -50,8 +53,8 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 1. Download the current official Solo Rules from the SCCA Solo Cars and Rules page.
 2. Review Fastrack technical bulletins published after the annual rulebook.
-3. Update the selection catalog only for selector breadth; never promote its class arrays into runtime decisions.
-4. Update the current overlay only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
+3. Add a vehicle family or package only when the exact naming and year-specific placement have been reviewed.
+4. Update the current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
 5. Add regression tests for every corrected vehicle or allowance.
 6. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
 

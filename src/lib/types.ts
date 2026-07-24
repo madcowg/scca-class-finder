@@ -88,8 +88,17 @@ export interface CategoryEvaluation {
   status: CategoryStatus;
   classId?: string;
   blockers: RuleFinding[];
+  preparationLegal: boolean;
   mappingAvailable: boolean;
   note?: string;
+}
+
+export interface ModificationAssessment {
+  /** Categories where every selected modification is represented as legal. */
+  legalCategories: PrincipalCategory[];
+  /** Least-prepared category permitted by the modification set alone. */
+  minimumLegalCategory: PrincipalCategory | null;
+  manualFindings: RuleFinding[];
 }
 
 export interface ClassificationResult {
@@ -99,6 +108,7 @@ export interface ClassificationResult {
   confidence: "high" | "limited" | "manual-review";
   evaluations: CategoryEvaluation[];
   findings: RuleFinding[];
+  preparation: ModificationAssessment;
   supplementalClasses: string[];
   messages: string[];
 }

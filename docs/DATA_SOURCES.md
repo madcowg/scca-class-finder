@@ -48,7 +48,7 @@ Current rule-model corrections from official sources:
 
 The app does not claim that category allowances automatically carry forward. Each dropdown option has an explicit category list.
 
-## Vehicle mapping layers
+## Vehicle mapping and selector layers
 
 ### Current curated overrides
 
@@ -56,6 +56,11 @@ The app does not claim that category allowances automatically carry forward. Eac
 
 - `street-only` entries for exact current vehicles where only the Street listing was verified from current official text;
 - `verified-classes` entries where the current official review confirmed a few exact classes, but not the full older fallback mapping.
+
+The live selector is intentionally narrower than the legacy import. It exposes only explicit reviewed
+model families and year-specific variants from `src/data/reviewed-vehicles2026.json`. This prevents a trim or
+package from appearing as a duplicate model family and makes an unreviewed car choose the visible
+`Not listed` path instead of receiving a stale-looking result.
 
 Corrected current-vehicle mappings now include:
 
@@ -73,12 +78,12 @@ Corrected older audited overrides now intentionally stop short of non-official c
 - `Nissan 350Z NISMO (2004-08)` now verifies only the current official `CS` listing.
 - `Porsche Boxster (987.1 base) (2005-08)` now verifies the current official `CS` and `BST` listings without inferring additional classes.
 
-### Selection catalog only
+### Legacy import retained for provenance only
 
 `src/data/vehicles.generated.json` is derived from the MIT-licensed `Bjorn248/scca_classifier` project.
-It provides breadth for year, make, model-family, and submodel selectors only. Runtime classification
-never falls back to its class arrays. If `src/data/overrides2026.ts` does not contain a reviewed
-exact placement, the engine returns manual review.
+It is retained for provenance and data-integrity checks only. It does not populate the live selector,
+and runtime classification never falls back to its class arrays. If `src/data/overrides2026.ts` does
+not contain a reviewed exact placement, the engine returns manual review.
 
 ## Required maintenance practice
 

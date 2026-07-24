@@ -24,6 +24,8 @@ function ClassificationReason({
   result: ClassificationResult;
   vehicleName: string;
 }) {
+  const minimumLegalCategory = result.preparation.minimumLegalCategory;
+
   if (!result.selectedCategory || !result.selectedClass) {
     return (
       <div className="panel classification-reason">
@@ -34,8 +36,12 @@ function ClassificationReason({
           </div>
         </div>
         <p>
-          We checked the exact vehicle selection and each build answer, but there is not enough
-          first-party placement or rule detail to safely choose a category for{" "}
+          We first evaluated the modification profile without using the vehicle's class listing.
+          {minimumLegalCategory
+            ? ` The selected build is modeled as legal starting in ${CATEGORY_LABELS[minimumLegalCategory]}. `
+            : " The selected build contains a detail that requires manual rule review. "}
+          We then checked the exact year, model, and submodel or package, but there is no reviewed
+          Appendix A placement that safely completes this result for{" "}
           {vehicleName || "this vehicle"}.
           The category cards below show exactly where the decision stopped.
         </p>
@@ -58,10 +64,13 @@ function ClassificationReason({
         </div>
       </div>
       <p>
-        We first matched the exact year, make, model family, and submodel or package. Then we
-        checked every selected modification against the modeled preparation allowances. {" "}
-        {CATEGORY_LABELS[result.selectedCategory]} is the first category where the complete build
-        passes those checks and the exact vehicle has a reviewed class placement: {" "}
+        We first evaluated every selected modification against the modeled preparation allowances.
+        {minimumLegalCategory
+          ? ` That build is legal starting in ${CATEGORY_LABELS[minimumLegalCategory]}. `
+          : " "}
+        We then matched the exact year, make, model family, and submodel or package. {" "}
+        {CATEGORY_LABELS[result.selectedCategory]} is the least-prepared category where the
+        complete build passes those checks and the exact vehicle has a reviewed class placement: {" "}
         <strong>{classLabel(result.selectedClass)}</strong>.
       </p>
       <p>

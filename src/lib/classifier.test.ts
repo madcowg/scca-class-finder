@@ -90,14 +90,14 @@ describe("classifyVehicle", () => {
 
   it("uses corrected 2026 current Street placements for modern cars", () => {
     const integraTypeS = classifyVehicle(
-      { make: "Acura", model: "Integra Type S", year: "2026" },
+      { make: "Acura", model: "Integra", variant: "Type S", year: "2026" },
       DEFAULT_BUILD
     );
     expect(integraTypeS.selectedClass).toBe("as");
     expect(integraTypeS.confidence).toBe("limited");
 
     const m240i = classifyVehicle(
-      { make: "BMW", model: "M240i (incl. xDrive)", year: "2026" },
+      { make: "BMW", model: "M240i", year: "2026" },
       DEFAULT_BUILD
     );
     expect(m240i.selectedClass).toBe("es");
@@ -115,37 +115,26 @@ describe("classifyVehicle", () => {
       DEFAULT_BUILD
     );
     expect(result.mapping?.selection.model).toBe("Integra");
-    expect(result.mapping?.selection.variant).toBe("Integra Type S");
+    expect(result.mapping?.selection.variant).toBe("Type S");
     expect(result.selectedClass).toBe("as");
   });
 
-  it("groups Miata source descriptions under one model family with year-specific variants", () => {
-    const models = getModels("Mazda");
-    expect(models).toContain("MX-5 Miata");
-    expect(models).not.toContain("MX-5 Miata First Generation (NA) non-Torsen differential");
-    expect(models).not.toContain("Mazdaspeed Miata");
-    expect(models).not.toContain("Mazda Mazda3 Turbo");
+  it("exposes reviewed model families and keeps packages in the variant field", () => {
+    const models = getModels("Mazda", "2026");
+    expect(models).toEqual(["Mazda3"]);
     expect(models).not.toContain("Mazda3 Turbo");
-    expect(models).not.toContain("Mazda3 (non-turbo)");
 
-    const variants = getVehicleVariants("Mazda", "MX-5 Miata", "2005");
-    expect(variants.map((variant) => variant.value)).toEqual(
-      expect.arrayContaining(["MX-5 Miata", "Mazdaspeed Miata"])
-    );
+    const variants = getVehicleVariants("Mazda", "Mazda3", "2026");
+    expect(variants.map((variant) => variant.value)).toEqual(["Non-turbo", "Turbo"]);
   });
 
-  it("groups every vehicle family before exposing year-specific submodels", () => {
-    expect(getMakes("2025")).toContain("Ford");
+  it("uses the same family/package shape for a second make", () => {
+    const models = getModels("Acura", "2026");
+    expect(models).toEqual(["Integra"]);
+    expect(models).not.toContain("Integra Type S");
 
-    const models = getModels("Ford", "2025");
-    expect(models).toContain("Mustang");
-    expect(models).not.toContain("Mustang GT");
-    expect(models).not.toContain("Mustang Dark Horse");
-
-    const variants = getVehicleVariants("Ford", "Mustang", "2025");
-    expect(variants.map((variant) => variant.value)).toEqual(
-      expect.arrayContaining(["Mustang GT", "Mustang Dark Horse"])
-    );
+    const variants = getVehicleVariants("Acura", "Integra", "2026");
+    expect(variants.map((variant) => variant.value)).toEqual(["Base", "A-Spec", "Type S"]);
   });
 
   it("routes an explicitly unlisted vehicle to manual review", () => {
@@ -161,7 +150,7 @@ describe("classifyVehicle", () => {
     );
     expect(result.mapping).toBeNull();
     expect(result.confidence).toBe("manual-review");
-    expect(result.messages[0]).toContain("outside the current listed catalog");
+    expect(result.messages[0]).toContain("outside the reviewed catalog");
   });
 
   it("stops at manual review when stale higher-category mappings are not officially verified", () => {
@@ -171,7 +160,7 @@ describe("classifyVehicle", () => {
     );
     expect(camaro.selectedClass).toBeNull();
     expect(camaro.evaluations.find((item) => item.category === "streetPrepared")?.status).toBe(
-      "manual-review"
+      "not-listed"
     );
 
     const nismo = classifyVehicle(
@@ -203,7 +192,7 @@ describe("classifyVehicle", () => {
 
   it("keeps verified supplemental classes separate from the primary recommendation", () => {
     const result = classifyVehicle(
-      { make: "Hyundai", model: "IONIQ 5", year: "2025", variant: "IONIQ 5 N" },
+      { make: "Hyundai", model: "Ioniq 5", year: "2025", variant: "N" },
       DEFAULT_BUILD
     );
     expect(result.selectedClass).toBe("ss");
@@ -233,5 +222,44 @@ describe("classifyVehicle", () => {
     });
     expect(unknownBuild.selectedClass).toBeNull();
     expect(unknownBuild.confidence).toBe("manual-review");
+  });
+
+  it("derives the modification category before intersecting it with vehicle placement", () => {
+    const result = classifyVehicleWithMapping(
+      miata,
+      { ...DEFAULT_BUILD, tires: "dotBelow200" },
+      {
+        ...reviewedMiataMapping,
+        classes: ["as", "csp"]
+      }
+    );
+
+    expect(result.preparation.minimumLegalCategory).toBe("streetPrepared");
+    expect(result.preparation.legalCategories).toEqual([
+      "streetPrepared",
+      "streetModified",
+      "prepared",
+      "modified"
+    ]);
+    expect(result.selectedCategory).toBe("streetPrepared");
+    expect(result.selectedClass).toBe("csp");
+    expect(result.evaluations.find((item) => item.category === "street")?.status).toBe("blocked");
+    expect(result.evaluations.find((item) => item.category === "streetPrepared")?.preparationLegal).toBe(true);
+  });
+
+  it("does not promote a stock build into a higher mapped class when Street is unlisted", () => {
+    const result = classifyVehicleWithMapping(
+      miata,
+      DEFAULT_BUILD,
+      {
+        ...reviewedMiataMapping,
+        classes: ["csp"]
+      }
+    );
+
+    expect(result.preparation.minimumLegalCategory).toBe("street");
+    expect(result.evaluations.find((item) => item.category === "street")?.status).toBe("not-listed");
+    expect(result.selectedCategory).toBe("streetPrepared");
+    expect(result.messages.join(" ")).toContain("build is legal in street");
   });
 });

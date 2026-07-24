@@ -1,14 +1,11 @@
-import {
-  CATEGORY_ORDER,
-  SUPPLEMENTAL_CLASS_IDS,
-  classForCategory
-} from "./classMetadata";
+import { CATEGORY_ORDER, SUPPLEMENTAL_CLASS_IDS, classForCategory } from "./classMetadata";
 import { RULE_GROUPS, findRuleOption } from "./rules";
 import { getVehicleMapping } from "./vehicleData";
 import type {
   BuildProfile,
   CategoryEvaluation,
   ClassificationResult,
+  ModificationAssessment,
   PrincipalCategory,
   RuleFinding,
   VehicleMapping,
@@ -29,6 +26,7 @@ function evaluateFindings(build: BuildProfile): RuleFinding[] {
         manualReview: true
       };
     }
+
     return {
       field: group.field,
       title: group.title,
@@ -41,41 +39,55 @@ function evaluateFindings(build: BuildProfile): RuleFinding[] {
   });
 }
 
-function evaluateCategory(
-  category: PrincipalCategory,
-  mapping: NonNullable<ClassificationResult["mapping"]>,
-  findings: RuleFinding[]
-): CategoryEvaluation {
-  const classId = classForCategory(mapping.classes, category);
-  const mappingAvailable = Boolean(classId);
-  const blockers = findings.filter(
-    (finding) => !finding.allowedCategories.includes(category)
-  );
-  const anyManualFinding = findings.some((finding) => finding.manualReview);
-  const verifiedClassSummary =
-    mapping.classes
-      .filter((classId) => !SUPPLEMENTAL_CLASS_IDS.has(classId))
-      .map((classId) => classId.toUpperCase())
-      .join(", ") || "the listed classes";
-
-  if (mapping.coverage === "street-only" && category !== "street") {
+/**
+ * Preparation is evaluated without looking at Appendix A. CATEGORY_ORDER is a
+ * preference order from least to most prepared, not a claim that permissions
+ * form a ladder. Each category is tested independently against every finding.
+ */
+function assessModifications(findings: RuleFinding[]): ModificationAssessment {
+  const manualFindings = findings.filter((finding) => finding.manualReview);
+  if (manualFindings.length > 0) {
     return {
-      category,
-      status: "manual-review",
-      mappingAvailable: false,
-      blockers,
-      note: "This 2026 overlay verifies Street only; no higher-category class is inferred."
+      legalCategories: [],
+      minimumLegalCategory: null,
+      manualFindings
     };
   }
 
-  if (anyManualFinding) {
+  const legalCategories = CATEGORY_ORDER.filter((category) =>
+    findings.every((finding) => finding.allowedCategories.includes(category))
+  );
+
+  return {
+    legalCategories,
+    minimumLegalCategory: legalCategories[0] ?? null,
+    manualFindings: []
+  };
+}
+
+function evaluateCategory(
+  category: PrincipalCategory,
+  mapping: VehicleMapping,
+  findings: RuleFinding[],
+  preparation: ModificationAssessment
+): CategoryEvaluation {
+  const classId = classForCategory(mapping.classes, category);
+  const blockers = findings.filter(
+    (finding) => !finding.allowedCategories.includes(category)
+  );
+  const manualFindings = findings.filter((finding) => finding.manualReview);
+  const preparationLegal = manualFindings.length === 0 && blockers.length === 0;
+  const mappingAvailable = Boolean(classId);
+
+  if (manualFindings.length > 0) {
     return {
       category,
       status: "manual-review",
       classId,
-      blockers: findings.filter((finding) => finding.manualReview),
+      blockers: manualFindings,
+      preparationLegal: false,
       mappingAvailable,
-      note: "At least one selected modification requires exact rule-text review."
+      note: "At least one selected modification requires exact rule-text or fitment review."
     };
   }
 
@@ -85,17 +97,8 @@ function evaluateCategory(
       status: "blocked",
       classId,
       blockers,
+      preparationLegal: false,
       mappingAvailable
-    };
-  }
-
-  if (mapping.coverage === "verified-classes" && !mappingAvailable) {
-    return {
-      category,
-      status: "manual-review",
-      blockers: [],
-      mappingAvailable: false,
-      note: `Current source review verified ${verifiedClassSummary} for this exact car; this category was not inferred.`
     };
   }
 
@@ -104,8 +107,9 @@ function evaluateCategory(
       category,
       status: "not-listed",
       blockers: [],
+      preparationLegal: preparation.legalCategories.includes(category),
       mappingAvailable: false,
-      note: "The modification profile fits, but this vehicle mapping has no class in this category."
+      note: "The build passes the modeled preparation checks, but this exact vehicle has no reviewed placement in this category."
     };
   }
 
@@ -114,8 +118,50 @@ function evaluateCategory(
     status: "eligible",
     classId,
     blockers: [],
+    preparationLegal: true,
     mappingAvailable: true
   };
+}
+
+function buildMessages(
+  mapping: VehicleMapping,
+  preparation: ModificationAssessment,
+  evaluations: CategoryEvaluation[]
+): string[] {
+  const messages: string[] = [];
+  const selected = evaluations.find((evaluation) => evaluation.status === "eligible");
+
+  if (preparation.minimumLegalCategory) {
+    messages.push(
+      `The modification profile is first legal in ${preparation.minimumLegalCategory} before vehicle placement is considered.`
+    );
+  }
+
+  if (selected && preparation.minimumLegalCategory !== selected.category) {
+    messages.push(
+      `The build is legal in ${preparation.minimumLegalCategory ?? "the modeled categories"}, but that exact vehicle has no reviewed placement there. ${selected.category} is the least-prepared category that is both legal and listed.`
+    );
+  }
+
+  if (!selected) {
+    messages.push(
+      "No principal category is both legal for the selected modifications and reviewed for this exact vehicle. Manual review is required."
+    );
+  }
+
+  if (preparation.manualFindings.length > 0) {
+    messages.push(
+      "One or more selections are intentionally not auto-classed because exact dimensions, construction, or rule wording control eligibility."
+    );
+  }
+
+  if (mapping.coverage !== "full-mapping") {
+    messages.push(
+      "Only the exact placements listed in the current source review are used. Older, similar, or unverified category mappings are not carried forward."
+    );
+  }
+
+  return messages;
 }
 
 export function classifyVehicleWithMapping(
@@ -124,61 +170,30 @@ export function classifyVehicleWithMapping(
   mapping: VehicleMapping
 ): ClassificationResult {
   const findings = evaluateFindings(build);
-  const messages: string[] = [];
-
+  const preparation = assessModifications(findings);
   const evaluations = CATEGORY_ORDER.map((category) =>
-    evaluateCategory(category, mapping, findings)
+    evaluateCategory(category, mapping, findings, preparation)
   );
-
   const selected = evaluations.find((evaluation) => evaluation.status === "eligible");
-  const hasManualFinding = findings.some((finding) => finding.manualReview);
   const supplementalClasses = mapping.classes.filter((classId) =>
     SUPPLEMENTAL_CLASS_IDS.has(classId)
   );
-
-  if (mapping.coverage === "street-only") {
-    messages.push(
-      "Only the 2026 Street placement is verified for this entry. A modified build requires a current Appendix A lookup."
-    );
-  }
-
-  if (mapping.coverage === "verified-classes") {
-    const verifiedClassSummary =
-      mapping.classes
-        .filter((classId) => !SUPPLEMENTAL_CLASS_IDS.has(classId))
-        .map((classId) => classId.toUpperCase())
-        .join(", ");
-    messages.push(
-      `Only the current verified classes ${verifiedClassSummary} are used for this exact entry. Additional category mappings are not guessed from older or third-party data.`
-    );
-  }
-
-  if (!selected) {
-    messages.push(
-      "No principal category is both legal for the selected build and present in this vehicle mapping. Manual review is required."
-    );
-  }
-
-  if (hasManualFinding) {
-    messages.push(
-      "One or more selections are intentionally not auto-classed because exact dimensions, construction, or rule wording control eligibility."
-    );
-  }
 
   return {
     mapping,
     selectedCategory: selected?.category ?? null,
     selectedClass: selected?.classId ?? null,
     confidence:
-      !selected || hasManualFinding
+      !selected || preparation.manualFindings.length > 0
         ? "manual-review"
         : mapping.coverage !== "full-mapping"
           ? "limited"
           : "high",
     evaluations,
     findings,
+    preparation,
     supplementalClasses,
-    messages
+    messages: buildMessages(mapping, preparation, evaluations)
   };
 }
 
@@ -186,11 +201,14 @@ export function classifyVehicle(
   selection: VehicleSelection,
   build: BuildProfile
 ): ClassificationResult {
+  const findings = evaluateFindings(build);
+  const preparation = assessModifications(findings);
   const mapping = getVehicleMapping(selection);
+
   if (!mapping) {
     const vehicleMessage = selection.notListed
-      ? "This vehicle is outside the current listed catalog. Send the exact year, make, model, and package details to a regional chair instead of guessing."
-      : "This exact vehicle does not yet have a reviewed first-party placement in this app. Do not guess from a similar trim; send it for manual review.";
+      ? "This vehicle is outside the reviewed catalog. Send the exact year, make, model, and package details to a regional chair instead of guessing."
+      : "This exact year, model, and submodel does not yet have a reviewed first-party placement in this app. Do not guess from a similar trim; send it for manual review.";
     return {
       mapping: null,
       selectedCategory: null,
@@ -199,16 +217,22 @@ export function classifyVehicle(
       evaluations: CATEGORY_ORDER.map((category) => ({
         category,
         status: "manual-review",
-        blockers: [],
+        blockers: preparation.manualFindings,
+        preparationLegal: preparation.legalCategories.includes(category),
         mappingAvailable: false,
-        note: selection.notListed
-          ? "Vehicle is not listed in the current catalog."
-          : "This exact vehicle needs a first-party placement review."
+        note: vehicleMessage
       })),
-      findings: evaluateFindings(build),
+      findings,
+      preparation,
       supplementalClasses: [],
-      messages: [vehicleMessage]
+      messages: [
+        vehicleMessage,
+        preparation.minimumLegalCategory
+          ? `The modification profile is first legal in ${preparation.minimumLegalCategory}, but the exact vehicle placement is still missing.`
+          : "The modification profile cannot be completed automatically from the selected details."
+      ]
     };
   }
+
   return classifyVehicleWithMapping(selection, build, mapping);
 }
