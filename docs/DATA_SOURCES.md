@@ -7,8 +7,8 @@ Review date: 2026-07-24
 1. Current official SCCA Solo Rules and Appendix A
 2. Later Solo technical bulletins published in Fastrack
 3. Official supplemental-class rules
-4. This application's curated overrides
-5. The imported open-source mapping fallback
+4. This application's reviewed first-party placements
+5. The imported catalog, which is not a classification authority
 
 Official starting point:
 
@@ -73,9 +73,12 @@ Corrected older audited overrides now intentionally stop short of non-official c
 - `Nissan 350Z NISMO (2004-08)` now verifies only the current official `CS` listing.
 - `Porsche Boxster (987.1 base) (2005-08)` now verifies the current official `CS` and `BST` listings without inferring additional classes.
 
-### Imported fallback
+### Selection catalog only
 
-`src/data/vehicles.generated.json` is derived from the MIT-licensed `Bjorn248/scca_classifier` project. It provides breadth, but it can lag current Appendix A changes. The curated override layer always wins.
+`src/data/vehicles.generated.json` is derived from the MIT-licensed `Bjorn248/scca_classifier` project.
+It provides breadth for year, make, model-family, and submodel selectors only. Runtime classification
+never falls back to its class arrays. If `src/data/overrides2026.ts` does not contain a reviewed
+exact placement, the engine returns manual review.
 
 ## Required maintenance practice
 

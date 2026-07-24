@@ -11,6 +11,7 @@ import type {
   ClassificationResult,
   PrincipalCategory,
   RuleFinding,
+  VehicleMapping,
   VehicleSelection
 } from "./types";
 
@@ -117,37 +118,13 @@ function evaluateCategory(
   };
 }
 
-export function classifyVehicle(
+export function classifyVehicleWithMapping(
   selection: VehicleSelection,
-  build: BuildProfile
+  build: BuildProfile,
+  mapping: VehicleMapping
 ): ClassificationResult {
-  const mapping = getVehicleMapping(selection);
   const findings = evaluateFindings(build);
   const messages: string[] = [];
-
-  if (!mapping) {
-    const vehicleMessage = selection.notListed
-      ? "This vehicle is outside the current listed catalog. Send the exact year, make, model, and package details to a regional chair instead of guessing."
-      : "No Appendix A mapping was found for this exact make, model, and year. Do not guess from a similar trim.";
-    return {
-      mapping: null,
-      selectedCategory: null,
-      selectedClass: null,
-      confidence: "manual-review",
-      evaluations: CATEGORY_ORDER.map((category) => ({
-        category,
-        status: "manual-review",
-        blockers: [],
-        mappingAvailable: false,
-        note: selection.notListed
-          ? "Vehicle is not listed in the current catalog."
-          : "Select a listed make, model, and year."
-      })),
-      findings,
-      supplementalClasses: [],
-      messages: [vehicleMessage]
-    };
-  }
 
   const evaluations = CATEGORY_ORDER.map((category) =>
     evaluateCategory(category, mapping, findings)
@@ -203,4 +180,35 @@ export function classifyVehicle(
     supplementalClasses,
     messages
   };
+}
+
+export function classifyVehicle(
+  selection: VehicleSelection,
+  build: BuildProfile
+): ClassificationResult {
+  const mapping = getVehicleMapping(selection);
+  if (!mapping) {
+    const vehicleMessage = selection.notListed
+      ? "This vehicle is outside the current listed catalog. Send the exact year, make, model, and package details to a regional chair instead of guessing."
+      : "This exact vehicle does not yet have a reviewed first-party placement in this app. Do not guess from a similar trim; send it for manual review.";
+    return {
+      mapping: null,
+      selectedCategory: null,
+      selectedClass: null,
+      confidence: "manual-review",
+      evaluations: CATEGORY_ORDER.map((category) => ({
+        category,
+        status: "manual-review",
+        blockers: [],
+        mappingAvailable: false,
+        note: selection.notListed
+          ? "Vehicle is not listed in the current catalog."
+          : "This exact vehicle needs a first-party placement review."
+      })),
+      findings: evaluateFindings(build),
+      supplementalClasses: [],
+      messages: [vehicleMessage]
+    };
+  }
+  return classifyVehicleWithMapping(selection, build, mapping);
 }

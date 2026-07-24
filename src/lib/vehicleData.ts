@@ -33,6 +33,38 @@ for (const entry of [...STREET_OVERLAYS_2026, ...CURRENT_MAPPING_OVERRIDES]) {
 const canonicalBySourceKey = new Map<string, string>();
 const sourceModelsByFamilyKey = new Map<string, string[]>();
 
+const MODEL_FAMILY_ALIASES: Array<{
+  make: string;
+  pattern: RegExp;
+  family: string;
+}> = [
+  {
+    make: "Mazda",
+    pattern: /^(?:mx-?5(?:\s+miata)?|miata|mazdaspeed\s+miata|spec\s+miata)\b/i,
+    family: "MX-5 Miata"
+  },
+  {
+    make: "Tesla",
+    pattern: /^Model 3\b/i,
+    family: "Model 3"
+  },
+  {
+    make: "Tesla",
+    pattern: /^Model S\b/i,
+    family: "Model S"
+  },
+  {
+    make: "Tesla",
+    pattern: /^Model X\b/i,
+    family: "Model X"
+  },
+  {
+    make: "Tesla",
+    pattern: /^Model Y\b/i,
+    family: "Model Y"
+  }
+];
+
 function key(make: string, model: string, year: string): string {
   return `${make}\u0000${model}\u0000${year}`;
 }
@@ -54,23 +86,6 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function miataFamily(model: string): string | null {
-  if (
-    /^(?:mx-?5(?:\s+miata)?|mazdaspeed\s+miata|miata(?:\s+club\s+sport)?|spec\s+miata)\b/i.test(
-      model
-    )
-  ) {
-    return "MX-5 Miata";
-  }
-  return null;
-}
-
-function mazdaFamily(model: string): string | null {
-  if (/^mazda\s*3\b/i.test(model)) return "Mazda3";
-  if (/^mazda\s*6\b/i.test(model)) return "Mazda6";
-  return null;
-}
-
 function parentheticalBase(model: string): string | null {
   const index = model.search(/\s+\(/);
   if (index <= 0) return null;
@@ -85,13 +100,10 @@ function alternatePartBase(model: string): string | null {
 
 function canonicalModel(make: string, sourceModel: string): string {
   const cleaned = removeMakePrefix(make, sourceModel);
-  const miata = make === "Mazda" ? miataFamily(cleaned) : null;
-  if (miata) return miata;
-  const mazda = make === "Mazda" ? mazdaFamily(cleaned) : null;
-  if (mazda) return mazda;
-
-  const base = parentheticalBase(cleaned) ?? alternatePartBase(cleaned);
-  if (base) return base;
+  const alias = MODEL_FAMILY_ALIASES.find(
+    (candidate) => candidate.make === make && candidate.pattern.test(cleaned)
+  );
+  if (alias) return alias.family;
 
   const sourceModels = sourceModelsByMake.get(make) ?? new Set<string>();
   const candidates = [...sourceModels]
@@ -100,9 +112,16 @@ function canonicalModel(make: string, sourceModel: string): string {
     .filter((candidate) => candidate.length >= 3 && candidate.toLowerCase() !== cleaned.toLowerCase())
     .filter((candidate, index, values) => values.indexOf(candidate) === index)
     .filter((candidate) => cleaned.toLowerCase().startsWith(`${candidate.toLowerCase()} `))
-    .sort((left, right) => right.length - left.length);
+    .sort((left, right) => left.length - right.length);
 
-  return candidates[0] ?? cleaned;
+  if (candidates[0]) return candidates[0];
+
+  const firstToken = cleaned.split(/\s+/)[0];
+  const siblingCount = [...sourceModels].filter((candidate) => {
+    const sibling = removeMakePrefix(make, candidate).toLowerCase();
+    return sibling.startsWith(`${firstToken.toLowerCase()} `);
+  }).length;
+  return firstToken.length >= 3 && siblingCount > 1 ? firstToken : cleaned;
 }
 
 for (const [make, sourceModels] of sourceModelsByMake) {
@@ -135,12 +154,26 @@ function sourceModelsFor(make: string, model: string): string[] {
   return sourceModelsByFamilyKey.get(familyKey(make, canonical)) ?? [model];
 }
 
+function yearKeyApplies(yearKey: string, selectedYear: string): boolean {
+  if (yearKey === "all" || yearKey === selectedYear) return true;
+  if (!/^\d{4}$/.test(selectedYear)) return false;
+  if (/^\d{4}-\d{4}$/.test(yearKey)) {
+    const [start, end] = yearKey.split("-").map(Number);
+    const year = Number(selectedYear);
+    return year >= start && year <= end;
+  }
+  if (/^\d{4}-any$/.test(yearKey)) return Number(selectedYear) >= Number(yearKey.slice(0, 4));
+  if (/^any-\d{4}$/.test(yearKey)) return Number(selectedYear) <= Number(yearKey.slice(4));
+  return false;
+}
+
 function hasVehicleData(make: string, sourceModel: string, year: string): boolean {
   return Boolean(
     currentOverrideIndex.has(key(make, sourceModel, year)) ||
       overlayIndex.has(key(make, sourceModel, year)) ||
-      vehicles[make]?.[sourceModel]?.[year] ||
-      vehicles[make]?.[sourceModel]?.all
+      Object.keys(vehicles[make]?.[sourceModel] ?? {}).some((yearKey) =>
+        yearKeyApplies(yearKey, year)
+      )
   );
 }
 
@@ -167,6 +200,9 @@ function variantLabel(make: string, canonical: string, sourceModel: string): str
 }
 
 function sourceModelForSelection(selection: VehicleSelection): string | null {
+  if (selection.variant && hasVehicleData(selection.make, selection.variant, selection.year)) {
+    return selection.variant;
+  }
   const canonical = sourceModelFamily(selection.make, selection.model);
   const members = sourceModelsFor(selection.make, canonical);
   if (selection.variant && members.includes(selection.variant)) {
@@ -184,28 +220,50 @@ function sourceModelForSelection(selection: VehicleSelection): string | null {
   return active.length === 1 ? active[0] : null;
 }
 
-export function getMakes(): string[] {
-  return uniqueSorted([...sourceModelsByMake.keys()]);
-}
-
-export function getModels(make: string): string[] {
+export function getMakes(year = ""): string[] {
   return uniqueSorted(
-    [...(sourceModelsByMake.get(make) ?? [])].map((model) => sourceModelFamily(make, model))
+    [...sourceModelsByMake.entries()]
+      .filter(([make, models]) => !year || [...models].some((model) => hasMakeVehicleData(make, model, year)))
+      .map(([make]) => make)
   );
 }
 
-export function getYears(make: string, model: string): string[] {
+function hasMakeVehicleData(make: string, sourceModel: string, year: string): boolean {
+  return Boolean(
+    currentOverrideIndex.has(key(make, sourceModel, year)) ||
+      overlayIndex.has(key(make, sourceModel, year)) ||
+      Object.keys(vehicles[make]?.[sourceModel] ?? {}).some((yearKey) =>
+        yearKeyApplies(yearKey, year)
+      )
+  );
+}
+
+export function getModels(make: string, year = ""): string[] {
+  return uniqueSorted(
+    [...(sourceModelsByMake.get(make) ?? [])]
+      .filter((model) => !year || hasMakeVehicleData(make, model, year))
+      .map((model) => sourceModelFamily(make, model))
+  );
+}
+
+export function getYears(make = "", model = ""): string[] {
   const years: string[] = [];
-  for (const sourceModel of sourceModelsFor(make, model)) {
-    years.push(...Object.keys(vehicles[make]?.[sourceModel] ?? {}));
-    years.push(
-      ...STREET_OVERLAYS_2026.filter(
-        (entry) => entry.make === make && entry.model === sourceModel
-      ).map((entry) => entry.year),
-      ...CURRENT_MAPPING_OVERRIDES.filter(
-        (entry) => entry.make === make && entry.model === sourceModel
-      ).map((entry) => entry.year)
-    );
+  const sourceGroups = make
+    ? [[make, new Set(model ? sourceModelsFor(make, model) : [...(sourceModelsByMake.get(make) ?? [])])] as const]
+    : [...sourceModelsByMake.entries()].map(([sourceMake, sourceModels]) => [sourceMake, sourceModels] as const);
+
+  for (const [sourceMake, sourceModels] of sourceGroups) {
+    for (const sourceModel of sourceModels) {
+      years.push(...Object.keys(vehicles[sourceMake]?.[sourceModel] ?? {}));
+      years.push(
+        ...STREET_OVERLAYS_2026.filter(
+          (entry) => entry.make === sourceMake && entry.model === sourceModel
+        ).map((entry) => entry.year),
+        ...CURRENT_MAPPING_OVERRIDES.filter(
+          (entry) => entry.make === sourceMake && entry.model === sourceModel
+        ).map((entry) => entry.year)
+      );
+    }
   }
   return sortYears(years);
 }
@@ -232,9 +290,13 @@ export function resolveVehicleSelection(selection: VehicleSelection): VehicleSel
 
   const alias = aliasIndex.get(key(selection.make, selection.model, selection.year));
   const sourceModel = alias?.model ?? selection.variant ?? selection.model;
+  const directVariant =
+    selection.variant && hasVehicleData(selection.make, selection.variant, selection.year)
+      ? selection.variant
+      : undefined;
   const canonical = sourceModelFamily(selection.make, sourceModel);
   const members = sourceModelsFor(selection.make, canonical);
-  const variant = members.includes(sourceModel) && sourceModel !== canonical ? sourceModel : undefined;
+  const variant = directVariant ?? (members.includes(sourceModel) && sourceModel !== canonical ? sourceModel : undefined);
 
   return {
     ...selection,
@@ -279,19 +341,9 @@ export function getVehicleMapping(selection: VehicleSelection): VehicleMapping |
     };
   }
 
-  const modelData = vehicles[resolved.make]?.[sourceModel];
-  if (!modelData) return null;
-  const classes = modelData[resolved.year] ?? modelData.all;
-  if (!classes) return null;
-
-  return {
-    selection: canonicalSelection,
-    classes: [...new Set(classes.map((classId) => classId.toLowerCase()))],
-    source: "upstream",
-    coverage: "full-mapping",
-    sourceNote:
-      "Imported from the MIT-licensed scca_classifier vehicle mapping. Verify against the current rulebook and Fastrack before entering an event."
-  };
+  // The broad catalog is used for selection only. A class is returned only when
+  // this repository has a reviewed first-party placement for the exact vehicle.
+  return null;
 }
 
 export function searchVehicles(query: string, limit = 20): VehicleSelection[] {
@@ -331,7 +383,10 @@ export function vehicleSelectionLabel(selection: VehicleSelection): string {
   if (selection.notListed) {
     return selection.manualDescription || "Vehicle not listed";
   }
-  return [selection.year, selection.make, selection.model, selection.variant]
+  const variant = selection.variant
+    ? variantLabel(selection.make, selection.model, selection.variant)
+    : undefined;
+  return [selection.year, selection.make, selection.model, variant === "Base / standard listing" ? undefined : variant]
     .filter(Boolean)
     .join(" ");
 }

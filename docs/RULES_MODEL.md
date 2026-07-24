@@ -36,8 +36,8 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 ## Data layers
 
-- `vehicles.generated.json`: broad mapping imported from the MIT-licensed `Bjorn248/scca_classifier` project.
-- `overrides2026.ts`: a small set of current Street or partially audited exact placements cross-checked against official 2026 Appendix A / Appendix B text. It intentionally does not copy previous-year or third-party higher-category mappings forward.
+- `vehicles.generated.json`: broad selection catalog imported from the MIT-licensed `Bjorn248/scca_classifier` project. Its class arrays are not used by the runtime classifier.
+- `overrides2026.ts`: the reviewed first-party exact placements used by the runtime classifier, cross-checked against official 2026 Appendix A / Appendix B text. It intentionally does not copy previous-year or third-party higher-category mappings forward.
 - `rules.ts`: explicit category allowances for the user-facing modification profiles.
 
 ## Current source-handling rules
@@ -50,7 +50,7 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 1. Download the current official Solo Rules from the SCCA Solo Cars and Rules page.
 2. Review Fastrack technical bulletins published after the annual rulebook.
-3. Run `npm run import:upstream` only after reviewing the upstream source and license. (The script is currently invoked directly with `node scripts/import-upstream.mjs`.)
+3. Update the selection catalog only for selector breadth; never promote its class arrays into runtime decisions.
 4. Update the current overlay only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
 5. Add regression tests for every corrected vehicle or allowance.
 6. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.

@@ -34,28 +34,19 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
         <div>
           <p className="eyebrow">Review</p>
           <h2 id="review-title">Check the exact car and selected build facts</h2>
-          <p>Results update instantly. Edit any vehicle or build detail above instead of assuming a near match.</p>
+          <p>Confirm the exact vehicle and the build details before opening the classification result.</p>
         </div>
       </div>
 
-      <div className="review-grid">
-        <div className="review-card">
-          <span className="field-title">Exact vehicle</span>
-          <strong>{selectedVehicle || "Choose the exact make, model, and year."}</strong>
-        </div>
-
-        <div className="review-card">
-          <span className="field-title">Modeled changes</span>
-          <strong>
-            {changedFields.length === 0 ? "Standard build profile" : `${changedFields.length} selected change${changedFields.length === 1 ? "" : "s"}`}
-          </strong>
-        </div>
+      <div className="review-vehicle">
+        <span className="field-title">Vehicle</span>
+        <strong>{selectedVehicle || "Choose the exact make, model, and year."}</strong>
       </div>
 
+      <div className="review-mods">
+        <span className="field-title">Mods</span>
       {changedFields.length === 0 ? (
-        <p className="review-empty">
-          No modification fields currently move the car beyond the modeled stock configuration.
-        </p>
+        <p className="review-stock">Stock</p>
       ) : (
         <ul className="review-list">
           {changedFields.map((item) => (
@@ -66,6 +57,7 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
           ))}
         </ul>
       )}
+      </div>
 
       <div className="wizard-actions">
         <button className="secondary-button" type="button" onClick={onBack}>

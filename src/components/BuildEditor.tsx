@@ -1,5 +1,6 @@
-import { RULE_GROUPS } from "../lib/rules";
+import { DEFAULT_BUILD, RULE_GROUPS } from "../lib/rules";
 import type { BuildField, BuildProfile } from "../lib/types";
+import { useState } from "react";
 
 interface Props {
   value: BuildProfile;
@@ -8,27 +9,51 @@ interface Props {
   onNext: () => void;
 }
 
-const BUILD_SECTIONS: Array<{ title: string; description: string; fields: BuildField[] }> = [
+const BUILD_SECTIONS: Array<{
+  title: string;
+  description: string;
+  tip: string;
+  fields: BuildField[];
+}> = [
   {
     title: "Chassis, tires, and alignment",
     description: "The choices that most often determine Street and Street Touring legality.",
+    tip: "These parts change grip, response, and how quickly the car changes direction.",
     fields: ["tires", "wheels", "shocks", "springs", "swayBars", "alignment"]
   },
   {
     title: "Powertrain and differential",
     description: "Intake, exhaust, ECU, engine, and drivetrain changes.",
+    tip: "These parts change how power is made and how efficiently it reaches the tires.",
     fields: ["intake", "exhaust", "ecu", "engine", "differential", "brakes"]
   },
   {
     title: "Aero, safety, cabin, and body",
     description: "Exterior, interior, safety equipment, and anything outside the common paths.",
+    tip: "These changes affect stability, safety, balance, and how much weight the car carries.",
     fields: ["aero", "safety", "interior", "body", "other"]
   }
 ];
 
 export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
+  const [stockMode, setStockMode] = useState(() =>
+    RULE_GROUPS.every((group) => value[group.field] === DEFAULT_BUILD[group.field])
+  );
+  const isStock = stockMode;
+
   const update = (field: BuildField, next: string) => {
+    setStockMode(false);
     onChange({ ...value, [field]: next });
+  };
+
+  const toggleSection = (title: string, open: boolean) => {
+    setOpenSections((current) => {
+      const next = new Set(current);
+      if (open) next.add(title);
+      else next.delete(title);
+      return next;
+    });
   };
 
   return (
@@ -42,43 +67,84 @@ export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
         </div>
       </div>
 
-      <div className="build-sections">
-        {BUILD_SECTIONS.map((section, index) => (
-          <details className="build-section" key={section.title} open={index === 0}>
-            <summary>
-              <span>
-                <strong>{section.title}</strong>
-                <small>{section.description}</small>
-              </span>
-              <span className="summary-action">{index === 0 ? "Open" : "Show"}</span>
-            </summary>
-            <div className="build-grid">
-              {section.fields.map((field) => {
-                const group = RULE_GROUPS.find((candidate) => candidate.field === field);
-                if (!group) return null;
-                const selected = group.options.find((option) => option.value === value[group.field]);
-                return (
-                  <label className="build-field" key={group.field}>
-                    <span className="field-title">{group.title}</span>
-                    <span className="field-help">{group.help}</span>
-                    <select
-                      value={value[group.field]}
-                      onChange={(event) => update(group.field, event.target.value)}
-                    >
-                      {group.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="selected-detail">{selected?.description}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </details>
-        ))}
-      </div>
+      <label className="stock-toggle">
+        <input
+          type="checkbox"
+          checked={isStock}
+          onChange={(event) => {
+            setStockMode(event.target.checked);
+            if (event.target.checked) onChange(DEFAULT_BUILD);
+          }}
+        />
+        <span>
+          <strong>My car is stock</strong>
+          <small>Skip the modification questions and review the standard configuration.</small>
+        </span>
+      </label>
+
+      {isStock ? (
+        <div className="stock-confirmation">
+          <strong>Stock selected.</strong> You can continue to review, or uncheck this box to
+          describe a modified build.
+        </div>
+      ) : (
+        <div className="build-sections">
+          {BUILD_SECTIONS.map((section) => {
+            const open = openSections.has(section.title);
+            return (
+              <details
+                className="build-section"
+                key={section.title}
+                open={open}
+                onToggle={(event) => toggleSection(section.title, event.currentTarget.open)}
+              >
+                <summary>
+                  <span>
+                    <strong>
+                      {section.title}{" "}
+                      <span
+                        className="section-info"
+                        title={section.tip}
+                        aria-label={`Why this matters: ${section.tip}`}
+                      >
+                        ?
+                      </span>
+                    </strong>
+                    <small>{section.description}</small>
+                  </span>
+                  <span className="summary-action">{open ? "Hide" : "Show"}</span>
+                </summary>
+                <div className="build-grid">
+                  {section.fields.map((field) => {
+                    const group = RULE_GROUPS.find((candidate) => candidate.field === field);
+                    if (!group) return null;
+                    const selected = group.options.find(
+                      (option) => option.value === value[group.field]
+                    );
+                    return (
+                      <label className="build-field" key={group.field}>
+                        <span className="field-title">{group.title}</span>
+                        <span className="field-help">{group.help}</span>
+                        <select
+                          value={value[group.field]}
+                          onChange={(event) => update(group.field, event.target.value)}
+                        >
+                          {group.options.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="selected-detail">{selected?.description}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      )}
 
       <div className="wizard-actions">
         <button className="secondary-button" type="button" onClick={onBack}>

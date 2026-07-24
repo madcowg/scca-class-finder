@@ -17,11 +17,62 @@ interface Props {
   result: ClassificationResult;
 }
 
-const CONFIDENCE_LABELS: Record<ClassificationResult["confidence"], string> = {
-  high: "complete model",
-  limited: "limited data",
-  "manual-review": "manual review"
-};
+function ClassificationReason({
+  result,
+  vehicleName
+}: {
+  result: ClassificationResult;
+  vehicleName: string;
+}) {
+  if (!result.selectedCategory || !result.selectedClass) {
+    return (
+      <div className="panel classification-reason">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">How we got here</p>
+            <h3>Why this needs a human review</h3>
+          </div>
+        </div>
+        <p>
+          We checked the exact vehicle selection and each build answer, but there is not enough
+          first-party placement or rule detail to safely choose a category for{" "}
+          {vehicleName || "this vehicle"}.
+          The category cards below show exactly where the decision stopped.
+        </p>
+      </div>
+    );
+  }
+
+  const selectedIndex = CATEGORY_ORDER.indexOf(result.selectedCategory);
+  const earlierCategories = result.evaluations
+    .slice(0, selectedIndex)
+    .filter((evaluation) => evaluation.status !== "eligible")
+    .map((evaluation) => CATEGORY_LABELS[evaluation.category]);
+
+  return (
+    <div className="panel classification-reason">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">How we got here</p>
+          <h3>Why this vehicle belongs in {CATEGORY_LABELS[result.selectedCategory]}</h3>
+        </div>
+      </div>
+      <p>
+        We first matched the exact year, make, model family, and submodel or package. Then we
+        checked every selected modification against the modeled preparation allowances. {" "}
+        {CATEGORY_LABELS[result.selectedCategory]} is the first category where the complete build
+        passes those checks and the exact vehicle has a reviewed class placement: {" "}
+        <strong>{classLabel(result.selectedClass)}</strong>.
+      </p>
+      <p>
+        {earlierCategories.length > 0
+          ? `The earlier categories were not selected because they failed a build check or do not list this exact vehicle: ${earlierCategories.join(", ")}. `
+          : "No earlier category was available for this exact selection. "}
+        Categories are evaluated independently; we do not assume that every preparation category is a linear progression.
+      </p>
+    </div>
+  );
+}
 
 export function ResultPanel({ selection, result }: Props) {
   const vehicleName = vehicleSelectionLabel(selection);
@@ -47,7 +98,6 @@ export function ResultPanel({ selection, result }: Props) {
       <div className={`result-hero confidence-${result.confidence}`}>
         <div className="result-kicker">
           <span>Current result</span>
-          <span className="confidence-badge">{CONFIDENCE_LABELS[result.confidence]}</span>
         </div>
 
         {result.selectedClass && result.selectedCategory ? (
@@ -80,20 +130,9 @@ export function ResultPanel({ selection, result }: Props) {
           </div>
         )}
 
-        {result.mapping && (
-          <div className="mapping-source">
-            <strong>Mapping coverage:</strong>{" "}
-            {result.mapping.source === "2026-current-override"
-              ? result.mapping.coverage === "verified-classes"
-                ? "Current partial source audit"
-                : "Current 2026 principal-category override"
-              : result.mapping.coverage === "street-only"
-                ? "2026 Street only"
-                : "Imported category mapping"}
-            <span>{result.mapping.sourceNote}</span>
-          </div>
-        )}
       </div>
+
+      <ClassificationReason result={result} vehicleName={vehicleName} />
 
       {result.mapping && verifiedPrincipalPlacements.length > 0 && (
         <div className="panel placement-panel">

@@ -11,34 +11,49 @@ interface Props {
 const NOT_LISTED = "__not-listed__";
 
 export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) {
-  const makes = getMakes();
-  const models = value.make ? getModels(value.make) : [];
-  const years = value.make && value.model ? getYears(value.make, value.model) : [];
+  const years = getYears();
+  const makes = value.year ? getMakes(value.year) : [];
+  const models = value.make && value.year ? getModels(value.make, value.year) : [];
   const variants =
     value.make && value.model && value.year
       ? getVehicleVariants(value.make, value.model, value.year)
       : [];
 
+  const setNotListed = () => {
+    onChange({
+      make: "",
+      model: "",
+      year: "",
+      variant: undefined,
+      notListed: true,
+      manualDescription: ""
+    });
+  };
+
+  const changeYear = (year: string) => {
+    if (year === NOT_LISTED) {
+      setNotListed();
+      return;
+    }
+    onChange({ make: "", model: "", year, variant: undefined, notListed: false });
+  };
+
   const changeMake = (make: string) => {
-    onChange({ make, model: "", year: "", variant: undefined, notListed: false });
+    if (make === NOT_LISTED) {
+      setNotListed();
+      return;
+    }
+    onChange({ ...value, make, model: "", variant: undefined, notListed: false });
   };
 
   const changeModel = (model: string) => {
     if (model === NOT_LISTED) {
-      onChange({
-        ...value,
-        model: "",
-        year: "",
-        variant: undefined,
-        notListed: true,
-        manualDescription: ""
-      });
+      setNotListed();
       return;
     }
     onChange({
       ...value,
       model,
-      year: "",
       variant: undefined,
       notListed: false,
       manualDescription: undefined
@@ -53,17 +68,34 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
           <p className="eyebrow">Start here</p>
           <h2 id="vehicle-title">Choose the exact vehicle</h2>
           <p>
-            Select the rulebook family first. If that year has packages or trims that change
-            class, they appear in the next selector.
+            Start with the model year. We then narrow the make, model family, and any year-specific
+            submodel or package so the exact car is identified before the build is evaluated.
           </p>
         </div>
       </div>
 
       <div className="vehicle-grid">
         <label>
+          <span>Model year</span>
+          <select
+            value={value.notListed ? NOT_LISTED : value.year}
+            onChange={(event) => changeYear(event.target.value)}
+          >
+            <option value="">Select year</option>
+            {years.map((year) => (
+              <option key={year} value={year}>
+                {year === "all" ? "All listed years" : year}
+              </option>
+            ))}
+            <option value={NOT_LISTED}>Not listed</option>
+          </select>
+        </label>
+
+        <label>
           <span>Make</span>
           <select
-            value={value.make}
+            value={value.notListed ? NOT_LISTED : value.make}
+            disabled={!value.year || value.notListed}
             onChange={(event) => changeMake(event.target.value)}
           >
             <option value="">Select make</option>
@@ -72,6 +104,7 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
                 {make}
               </option>
             ))}
+            <option value={NOT_LISTED}>Not listed</option>
           </select>
         </label>
 
@@ -79,7 +112,7 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
           <span>Model family</span>
           <select
             value={value.notListed ? NOT_LISTED : value.model}
-            disabled={!value.make}
+            disabled={!value.make || !value.year || value.notListed}
             onChange={(event) => changeModel(event.target.value)}
           >
             <option value="">Select model family</option>
@@ -89,24 +122,6 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
               </option>
             ))}
             <option value={NOT_LISTED}>Not listed</option>
-          </select>
-        </label>
-
-        <label>
-          <span>Model year</span>
-          <select
-            value={value.year}
-            disabled={!value.model || value.notListed}
-            onChange={(event) =>
-              onChange({ ...value, year: event.target.value, variant: undefined })
-            }
-          >
-            <option value="">Select year</option>
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year === "all" ? "All listed years" : year}
-              </option>
-            ))}
           </select>
         </label>
       </div>

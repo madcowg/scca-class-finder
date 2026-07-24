@@ -6,7 +6,7 @@ import { ResultPanel } from "./components/ResultPanel";
 import { VehicleSelector } from "./components/VehicleSelector";
 import { classifyVehicle } from "./lib/classifier";
 import { DEFAULT_BUILD } from "./lib/rules";
-import { getVehicleMapping, resolveVehicleSelection } from "./lib/vehicleData";
+import { getVehicleVariants, resolveVehicleSelection } from "./lib/vehicleData";
 import type { BuildProfile, VehicleSelection } from "./lib/types";
 
 type Step = 1 | 2 | 3 | 4;
@@ -16,32 +16,14 @@ interface SavedState {
   build: BuildProfile;
 }
 
-const DEFAULT_SELECTION: VehicleSelection = {
-  make: "Mazda",
-  model: "MX-5 Miata",
-  year: "2016"
-};
-
-const TOURING_MIATA: SavedState = {
-  selection: DEFAULT_SELECTION,
-  build: {
-    ...DEFAULT_BUILD,
-    wheels: "streetTouringLegal",
-    springs: "coilovers",
-    swayBars: "bothChanged",
-    alignment: "streetTouringHardware",
-    intake: "toThrottleBody",
-    exhaust: "headersHighFlowCat",
-    ecu: "reflash"
-  }
-};
+const EMPTY_SELECTION: VehicleSelection = { make: "", model: "", year: "" };
 
 function readInitialState(): SavedState {
   const params = new URLSearchParams(window.location.search);
   const encoded = params.get("build");
   if (!encoded) {
     return {
-      selection: resolveVehicleSelection(DEFAULT_SELECTION),
+      selection: EMPTY_SELECTION,
       build: DEFAULT_BUILD
     };
   }
@@ -50,9 +32,9 @@ function readInitialState(): SavedState {
     const parsed = JSON.parse(decodeURIComponent(encoded)) as Partial<SavedState>;
     return {
       selection: resolveVehicleSelection({
-        make: parsed.selection?.make ?? DEFAULT_SELECTION.make,
-        model: parsed.selection?.model ?? DEFAULT_SELECTION.model,
-        year: parsed.selection?.year ?? DEFAULT_SELECTION.year,
+        make: parsed.selection?.make ?? EMPTY_SELECTION.make,
+        model: parsed.selection?.model ?? EMPTY_SELECTION.model,
+        year: parsed.selection?.year ?? EMPTY_SELECTION.year,
         variant: parsed.selection?.variant,
         notListed: parsed.selection?.notListed,
         manualDescription: parsed.selection?.manualDescription
@@ -61,7 +43,7 @@ function readInitialState(): SavedState {
     };
   } catch {
     return {
-      selection: resolveVehicleSelection(DEFAULT_SELECTION),
+      selection: EMPTY_SELECTION,
       build: DEFAULT_BUILD
     };
   }
@@ -80,20 +62,13 @@ export default function App() {
     [selection, build]
   );
 
-  const loadState = (state: SavedState) => {
-    setSelection(resolveVehicleSelection(state.selection));
-    setBuild(state.build);
-    setActiveStep(1);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   const vehicleReady = selection.notListed
     ? Boolean(selection.manualDescription?.trim())
     : Boolean(
         selection.make &&
           selection.model &&
           selection.year &&
-          getVehicleMapping(selection)
+          (selection.variant || getVehicleVariants(selection.make, selection.model, selection.year).length <= 1)
       );
 
   const goToStep = (step: Step) => {
@@ -121,8 +96,7 @@ export default function App() {
         <a className="brand" href="./" aria-label="SCCA Solo Class Finder home">
           <img className="brand-logo" src={alsccaLogo} alt="" />
           <span>
-            <strong>Solo Class Finder</strong>
-            <small>Explainable, conservative classing</small>
+            <strong>SCCA Solo Classification Assistant</strong>
           </span>
         </a>
 
@@ -178,18 +152,14 @@ export default function App() {
         <section className="intro-band">
           <div>
             <p className="eyebrow">SCCA Solo classification assistant</p>
-            <h1>Class the car you actually built.</h1>
-            <p className="intro-copy">
-              Choose the car, describe the build, review the facts, and then read the result. The
-              engine stops rather than inventing an answer when the data or modification detail is
-              incomplete.
-            </p>
+            <h1>Let's find where you belong before you go to sign up for your event</h1>
+            <p className="intro-copy">It's ok not to know!</p>
           </div>
         </section>
 
         <nav className="progress-nav" aria-label="Classification steps">
           {[
-            [1, "Vehicle", "Make, model, year"],
+              [1, "Vehicle", "Year, make, model"],
             [2, "Build", "Preparation details"],
             [3, "Review", "Check your inputs"],
             [4, "Result", "Class and rule path"]
@@ -221,34 +191,6 @@ export default function App() {
                 canAdvance={vehicleReady}
                 onNext={() => goToStep(2)}
               />
-
-              <div className="preset-bar" aria-label="Example builds">
-                <span>Examples</span>
-                <button
-                  type="button"
-                  onClick={() => loadState({ selection: DEFAULT_SELECTION, build: DEFAULT_BUILD })}
-                >
-                  Stock 2016 Miata
-                </button>
-                <button type="button" onClick={() => loadState(TOURING_MIATA)}>
-                  AST Miata build
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    loadState({
-                      selection: {
-                        make: "Chevrolet",
-                        model: "Camaro (V6)",
-                        year: "2010"
-                      },
-                      build: DEFAULT_BUILD
-                    })
-                  }
-                >
-                  Stock 2010 Camaro V6
-                </button>
-              </div>
             </div>
           )}
 

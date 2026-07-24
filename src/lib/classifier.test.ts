@@ -1,20 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { classifyVehicle } from "./classifier";
+import { classifyVehicle, classifyVehicleWithMapping } from "./classifier";
 import { DEFAULT_BUILD } from "./rules";
-import { getModels, getVehicleVariants } from "./vehicleData";
+import type { VehicleMapping } from "./types";
+import { getMakes, getModels, getVehicleVariants } from "./vehicleData";
 
 const miata = { make: "Mazda", model: "MX-5 Miata", year: "2016" };
+const reviewedMiataMapping: VehicleMapping = {
+  selection: miata,
+  classes: ["cs", "ast", "dsp", "ssm", "dp"],
+  source: "2026-current-override",
+  coverage: "full-mapping",
+  sourceNote: "Test fixture representing a fully reviewed first-party placement."
+};
+
+function classifyReviewedMiata(build = DEFAULT_BUILD) {
+  return classifyVehicleWithMapping(miata, build, reviewedMiataMapping);
+}
 
 describe("classifyVehicle", () => {
-  it("places a Street-legal 2016 MX-5 in CS", () => {
+  it("does not use the catalog as an unreviewed class placement", () => {
     const result = classifyVehicle(miata, DEFAULT_BUILD);
+    expect(result.selectedCategory).toBeNull();
+    expect(result.selectedClass).toBeNull();
+    expect(result.confidence).toBe("manual-review");
+  });
+
+  it("places a reviewed Street-legal 2016 MX-5 in CS", () => {
+    const result = classifyReviewedMiata();
     expect(result.selectedCategory).toBe("street");
     expect(result.selectedClass).toBe("cs");
     expect(result.confidence).toBe("high");
   });
 
   it("explains why a Street Touring Miata build leaves Street", () => {
-    const result = classifyVehicle(miata, {
+    const result = classifyReviewedMiata({
       ...DEFAULT_BUILD,
       springs: "coilovers",
       swayBars: "bothChanged",
@@ -30,7 +49,7 @@ describe("classifyVehicle", () => {
   });
 
   it("moves an R-comp build to the first listed SP-or-higher category", () => {
-    const result = classifyVehicle(miata, {
+    const result = classifyReviewedMiata({
       ...DEFAULT_BUILD,
       tires: "dotBelow200"
     });
@@ -39,7 +58,7 @@ describe("classifyVehicle", () => {
   });
 
   it("does not over-bump Street Prepared-scope engine changes into Street Modified", () => {
-    const result = classifyVehicle(miata, {
+    const result = classifyReviewedMiata({
       ...DEFAULT_BUILD,
       engine: "boostOrInternal"
     });
@@ -51,7 +70,7 @@ describe("classifyVehicle", () => {
   });
 
   it("moves an engine-swap build to Street Modified when listed", () => {
-    const result = classifyVehicle(miata, {
+    const result = classifyReviewedMiata({
       ...DEFAULT_BUILD,
       engine: "swapOrAddedInduction"
     });
@@ -115,6 +134,20 @@ describe("classifyVehicle", () => {
     );
   });
 
+  it("groups every vehicle family before exposing year-specific submodels", () => {
+    expect(getMakes("2025")).toContain("Ford");
+
+    const models = getModels("Ford", "2025");
+    expect(models).toContain("Mustang");
+    expect(models).not.toContain("Mustang GT");
+    expect(models).not.toContain("Mustang Dark Horse");
+
+    const variants = getVehicleVariants("Ford", "Mustang", "2025");
+    expect(variants.map((variant) => variant.value)).toEqual(
+      expect.arrayContaining(["Mustang GT", "Mustang Dark Horse"])
+    );
+  });
+
   it("routes an explicitly unlisted vehicle to manual review", () => {
     const result = classifyVehicle(
       {
@@ -170,7 +203,7 @@ describe("classifyVehicle", () => {
 
   it("keeps verified supplemental classes separate from the primary recommendation", () => {
     const result = classifyVehicle(
-      { make: "Hyundai", model: "IONIQ 5 N", year: "2025" },
+      { make: "Hyundai", model: "IONIQ 5", year: "2025", variant: "IONIQ 5 N" },
       DEFAULT_BUILD
     );
     expect(result.selectedClass).toBe("ss");
@@ -194,7 +227,7 @@ describe("classifyVehicle", () => {
     expect(unknownVehicle.mapping).toBeNull();
     expect(unknownVehicle.selectedClass).toBeNull();
 
-    const unknownBuild = classifyVehicle(miata, {
+    const unknownBuild = classifyReviewedMiata({
       ...DEFAULT_BUILD,
       tires: "unknown"
     });
