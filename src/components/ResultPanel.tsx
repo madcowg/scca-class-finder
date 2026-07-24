@@ -6,6 +6,7 @@ import {
   classLabel
 } from "../lib/classMetadata";
 import type { ClassificationResult, VehicleSelection } from "../lib/types";
+import { vehicleSelectionLabel } from "../lib/vehicleData";
 import { CategoryLadder } from "./CategoryLadder";
 import { RuleLedger } from "./RuleLedger";
 
@@ -21,9 +22,7 @@ const CONFIDENCE_LABELS: Record<ClassificationResult["confidence"], string> = {
 };
 
 export function ResultPanel({ selection, result }: Props) {
-  const vehicleName = [selection.year, selection.make, selection.model]
-    .filter(Boolean)
-    .join(" ");
+  const vehicleName = vehicleSelectionLabel(selection);
   const verifiedPrincipalPlacements = result.mapping
     ? result.mapping.classes
         .map((classId) => ({
@@ -41,7 +40,7 @@ export function ResultPanel({ selection, result }: Props) {
     : [];
 
   return (
-    <section className="results-column" aria-labelledby="result-title">
+    <section className="results-column" id="result-step" aria-labelledby="result-title">
       <div className={`result-hero confidence-${result.confidence}`}>
         <div className="result-kicker">
           <span>Current result</span>

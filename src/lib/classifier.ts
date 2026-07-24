@@ -126,6 +126,9 @@ export function classifyVehicle(
   const messages: string[] = [];
 
   if (!mapping) {
+    const vehicleMessage = selection.notListed
+      ? "This vehicle is outside the current listed catalog. Send the exact year, make, model, and package details to a regional chair instead of guessing."
+      : "No Appendix A mapping was found for this exact make, model, and year. Do not guess from a similar trim.";
     return {
       mapping: null,
       selectedCategory: null,
@@ -136,13 +139,13 @@ export function classifyVehicle(
         status: "manual-review",
         blockers: [],
         mappingAvailable: false,
-        note: "Select a listed make, model, and year."
+        note: selection.notListed
+          ? "Vehicle is not listed in the current catalog."
+          : "Select a listed make, model, and year."
       })),
       findings,
       supplementalClasses: [],
-      messages: [
-        "No Appendix A mapping was found for this exact make, model, and year. Do not guess from a similar trim."
-      ]
+      messages: [vehicleMessage]
     };
   }
 

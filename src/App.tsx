@@ -49,7 +49,10 @@ function readInitialState(): SavedState {
       selection: resolveVehicleSelection({
         make: parsed.selection?.make ?? DEFAULT_SELECTION.make,
         model: parsed.selection?.model ?? DEFAULT_SELECTION.model,
-        year: parsed.selection?.year ?? DEFAULT_SELECTION.year
+        year: parsed.selection?.year ?? DEFAULT_SELECTION.year,
+        variant: parsed.selection?.variant,
+        notListed: parsed.selection?.notListed,
+        manualDescription: parsed.selection?.manualDescription
       }),
       build: { ...DEFAULT_BUILD, ...(parsed.build ?? {}) }
     };
@@ -66,6 +69,7 @@ export default function App() {
   const [selection, setSelection] = useState<VehicleSelection>(initial.selection);
   const [build, setBuild] = useState<BuildProfile>(initial.build);
   const [shareLabel, setShareLabel] = useState("Copy share link");
+  const [contactOpen, setContactOpen] = useState(false);
 
   const result = useMemo(
     () => classifyVehicle(selection, build),
@@ -109,6 +113,23 @@ export default function App() {
 
         <div className="header-actions">
           <span className="data-badge">2026 rules framework</span>
+          <a
+            className="header-link"
+            href="https://www.scca.com/pages/solo-cars-and-rules"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Current Solo Rules
+          </a>
+          <button
+            className="contact-button"
+            type="button"
+            aria-expanded={contactOpen}
+            aria-controls="contact-panel"
+            onClick={() => setContactOpen((open) => !open)}
+          >
+            Contact regional chair
+          </button>
           <button className="secondary-button" type="button" onClick={copyShareLink}>
             {shareLabel}
           </button>
@@ -118,21 +139,45 @@ export default function App() {
         </div>
       </header>
 
+      {contactOpen && (
+        <aside className="contact-panel" id="contact-panel" aria-labelledby="contact-title">
+          <div>
+            <p className="eyebrow">Regional support</p>
+            <h2 id="contact-title">Need a human answer?</h2>
+            <p>
+              ZIP-code routing to the right regional chair is planned for the next release. Until
+              then, keep the exact vehicle and build details from this page ready for your region.
+            </p>
+          </div>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => setContactOpen(false)}
+          >
+            Close
+          </button>
+        </aside>
+      )}
+
       <main>
         <section className="intro-band">
           <div>
             <p className="eyebrow">SCCA Solo classification assistant</p>
             <h1>Class the car you actually built.</h1>
             <p className="intro-copy">
-              The engine first checks the vehicle’s listed class placements, then walks the build through Street, Street Touring, Street Prepared, Street Modified, Prepared, and Modified. It stops rather than inventing an answer when the data or modification detail is incomplete.
+              Choose the car, describe the build, review the facts, and then read the result. The
+              engine stops rather than inventing an answer when the data or modification detail is
+              incomplete.
             </p>
           </div>
-          <div className="logic-card">
-            <div><span>1</span> Find exact vehicle listing</div>
-            <div><span>2</span> Test every modification</div>
-            <div><span>3</span> Select the least-prepared legal class</div>
-          </div>
         </section>
+
+        <nav className="progress-nav" aria-label="Classification steps">
+          <a href="#vehicle-step"><span>1</span><strong>Vehicle</strong><small>Make, model, year</small></a>
+          <a href="#build-step"><span>2</span><strong>Build</strong><small>Preparation details</small></a>
+          <a href="#review-step"><span>3</span><strong>Review</strong><small>Check your inputs</small></a>
+          <a href="#result-step"><span>4</span><strong>Result</strong><small>Class and rule path</small></a>
+        </nav>
 
         <div className="workspace">
           <div className="input-column">

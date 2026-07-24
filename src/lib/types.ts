@@ -16,6 +16,15 @@ export interface VehicleSelection {
   make: string;
   model: string;
   year: string;
+  /** Raw rulebook/import model key when a family has multiple variants. */
+  variant?: string;
+  notListed?: boolean;
+  manualDescription?: string;
+}
+
+export interface VehicleVariant {
+  value: string;
+  label: string;
 }
 
 export interface VehicleMapping {

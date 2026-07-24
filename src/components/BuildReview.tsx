@@ -1,5 +1,6 @@
 import { DEFAULT_BUILD, RULE_GROUPS, findRuleOption } from "../lib/rules";
 import type { BuildProfile, VehicleSelection } from "../lib/types";
+import { vehicleSelectionLabel } from "../lib/vehicleData";
 
 interface Props {
   selection: VehicleSelection;
@@ -7,9 +8,7 @@ interface Props {
 }
 
 export function BuildReview({ selection, build }: Props) {
-  const selectedVehicle = [selection.year, selection.make, selection.model]
-    .filter(Boolean)
-    .join(" ");
+  const selectedVehicle = vehicleSelectionLabel(selection);
 
   const changedFields = RULE_GROUPS.flatMap((group) => {
     if (build[group.field] === DEFAULT_BUILD[group.field]) return [];
@@ -27,7 +26,7 @@ export function BuildReview({ selection, build }: Props) {
   });
 
   return (
-    <section className="panel review-panel" aria-labelledby="review-title">
+    <section className="panel review-panel" id="review-step" aria-labelledby="review-title">
       <div className="panel-heading">
         <div className="step-number">3</div>
         <div>

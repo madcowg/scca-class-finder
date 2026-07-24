@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { classifyVehicle } from "./classifier";
 import { DEFAULT_BUILD } from "./rules";
+import { getModels, getVehicleVariants } from "./vehicleData";
 
 const miata = { make: "Mazda", model: "MX-5 Miata", year: "2016" };
 
@@ -94,8 +95,40 @@ describe("classifyVehicle", () => {
       { make: "Acura", model: "Integra Type S (DE5)", year: "2026" },
       DEFAULT_BUILD
     );
-    expect(result.mapping?.selection.model).toBe("Integra Type S");
+    expect(result.mapping?.selection.model).toBe("Integra");
+    expect(result.mapping?.selection.variant).toBe("Integra Type S");
     expect(result.selectedClass).toBe("as");
+  });
+
+  it("groups Miata source descriptions under one model family with year-specific variants", () => {
+    const models = getModels("Mazda");
+    expect(models).toContain("MX-5 Miata");
+    expect(models).not.toContain("MX-5 Miata First Generation (NA) non-Torsen differential");
+    expect(models).not.toContain("Mazdaspeed Miata");
+    expect(models).not.toContain("Mazda Mazda3 Turbo");
+    expect(models).not.toContain("Mazda3 Turbo");
+    expect(models).not.toContain("Mazda3 (non-turbo)");
+
+    const variants = getVehicleVariants("Mazda", "MX-5 Miata", "2005");
+    expect(variants.map((variant) => variant.value)).toEqual(
+      expect.arrayContaining(["MX-5 Miata", "Mazdaspeed Miata"])
+    );
+  });
+
+  it("routes an explicitly unlisted vehicle to manual review", () => {
+    const result = classifyVehicle(
+      {
+        make: "Mazda",
+        model: "",
+        year: "",
+        notListed: true,
+        manualDescription: "2026 example vehicle"
+      },
+      DEFAULT_BUILD
+    );
+    expect(result.mapping).toBeNull();
+    expect(result.confidence).toBe("manual-review");
+    expect(result.messages[0]).toContain("outside the current listed catalog");
   });
 
   it("stops at manual review when stale higher-category mappings are not officially verified", () => {
