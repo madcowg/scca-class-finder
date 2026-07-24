@@ -1,0 +1,171 @@
+import { describe, expect, it } from "vitest";
+import { classifyVehicle } from "./classifier";
+import { DEFAULT_BUILD } from "./rules";
+
+const miata = { make: "Mazda", model: "MX-5 Miata", year: "2016" };
+
+describe("classifyVehicle", () => {
+  it("places a Street-legal 2016 MX-5 in CS", () => {
+    const result = classifyVehicle(miata, DEFAULT_BUILD);
+    expect(result.selectedCategory).toBe("street");
+    expect(result.selectedClass).toBe("cs");
+    expect(result.confidence).toBe("high");
+  });
+
+  it("explains why a Street Touring Miata build leaves Street", () => {
+    const result = classifyVehicle(miata, {
+      ...DEFAULT_BUILD,
+      springs: "coilovers",
+      swayBars: "bothChanged",
+      alignment: "streetTouringHardware",
+      intake: "toThrottleBody",
+      ecu: "reflash"
+    });
+
+    expect(result.evaluations[0].status).toBe("blocked");
+    expect(result.selectedCategory).toBe("streetTouring");
+    expect(result.selectedClass).toBe("ast");
+    expect(result.findings.find((finding) => finding.field === "springs")?.section).toBe("14.8.A");
+  });
+
+  it("moves an R-comp build to the first listed SP-or-higher category", () => {
+    const result = classifyVehicle(miata, {
+      ...DEFAULT_BUILD,
+      tires: "dotBelow200"
+    });
+    expect(result.selectedCategory).toBe("streetPrepared");
+    expect(result.selectedClass).toBe("dsp");
+  });
+
+  it("does not over-bump Street Prepared-scope engine changes into Street Modified", () => {
+    const result = classifyVehicle(miata, {
+      ...DEFAULT_BUILD,
+      engine: "boostOrInternal"
+    });
+    expect(result.selectedCategory).toBe("streetPrepared");
+    expect(result.selectedClass).toBe("dsp");
+    expect(result.findings.find((finding) => finding.field === "engine")?.section).toBe(
+      "15.10.C / 15.10.R-Z"
+    );
+  });
+
+  it("moves an engine-swap build to Street Modified when listed", () => {
+    const result = classifyVehicle(miata, {
+      ...DEFAULT_BUILD,
+      engine: "swapOrAddedInduction"
+    });
+    expect(result.selectedCategory).toBe("streetModified");
+    expect(result.selectedClass).toBe("ssm");
+  });
+
+  it("requires manual review for spring attachment-point changes", () => {
+    const result = classifyVehicle(miata, {
+      ...DEFAULT_BUILD,
+      springs: "changedAttachmentPoints"
+    });
+    expect(result.selectedClass).toBeNull();
+    expect(result.confidence).toBe("manual-review");
+    expect(result.findings.find((finding) => finding.field === "springs")?.manualReview).toBe(true);
+  });
+
+  it("uses corrected 2026 current Street placements for modern cars", () => {
+    const integraTypeS = classifyVehicle(
+      { make: "Acura", model: "Integra Type S", year: "2026" },
+      DEFAULT_BUILD
+    );
+    expect(integraTypeS.selectedClass).toBe("as");
+    expect(integraTypeS.confidence).toBe("limited");
+
+    const m240i = classifyVehicle(
+      { make: "BMW", model: "M240i (incl. xDrive)", year: "2026" },
+      DEFAULT_BUILD
+    );
+    expect(m240i.selectedClass).toBe("es");
+
+    const civicTypeR = classifyVehicle(
+      { make: "Honda", model: "Civic Type-R", year: "2026" },
+      DEFAULT_BUILD
+    );
+    expect(civicTypeR.selectedClass).toBe("as");
+  });
+
+  it("accepts legacy alias labels for curated current entries", () => {
+    const result = classifyVehicle(
+      { make: "Acura", model: "Integra Type S (DE5)", year: "2026" },
+      DEFAULT_BUILD
+    );
+    expect(result.mapping?.selection.model).toBe("Integra Type S");
+    expect(result.selectedClass).toBe("as");
+  });
+
+  it("stops at manual review when stale higher-category mappings are not officially verified", () => {
+    const camaro = classifyVehicle(
+      { make: "Chevrolet", model: "Camaro (V6)", year: "2010" },
+      { ...DEFAULT_BUILD, tires: "dotBelow200" }
+    );
+    expect(camaro.selectedClass).toBeNull();
+    expect(camaro.evaluations.find((item) => item.category === "streetPrepared")?.status).toBe(
+      "manual-review"
+    );
+
+    const nismo = classifyVehicle(
+      { make: "Nissan", model: "350Z NISMO", year: "2004" },
+      { ...DEFAULT_BUILD, tires: "slick" }
+    );
+    expect(nismo.selectedClass).toBeNull();
+    expect(nismo.confidence).toBe("manual-review");
+  });
+
+  it("uses partial audited mappings without inventing missing categories", () => {
+    const boxster = classifyVehicle(
+      { make: "Porsche", model: "Boxster (987.1 base)", year: "2005" },
+      {
+        ...DEFAULT_BUILD,
+        wheels: "streetTouringLegal",
+        springs: "coilovers",
+        swayBars: "bothChanged",
+        alignment: "streetTouringHardware",
+        intake: "toThrottleBody",
+        exhaust: "headersHighFlowCat",
+        ecu: "reflash"
+      }
+    );
+    expect(boxster.selectedCategory).toBe("streetTouring");
+    expect(boxster.selectedClass).toBe("bst");
+    expect(boxster.confidence).toBe("limited");
+  });
+
+  it("keeps verified supplemental classes separate from the primary recommendation", () => {
+    const result = classifyVehicle(
+      { make: "Hyundai", model: "IONIQ 5 N", year: "2025" },
+      DEFAULT_BUILD
+    );
+    expect(result.selectedClass).toBe("ss");
+    expect(result.supplementalClasses).toContain("evx");
+  });
+
+  it("does not auto-promote a 2026 Ioniq 5 N into unverified modified categories", () => {
+    const result = classifyVehicle(
+      { make: "Hyundai", model: "Ioniq 5 N", year: "2026" },
+      { ...DEFAULT_BUILD, springs: "coilovers" }
+    );
+    expect(result.selectedClass).toBeNull();
+    expect(result.confidence).toBe("manual-review");
+  });
+
+  it("refuses to guess an unknown vehicle or unknown configuration details", () => {
+    const unknownVehicle = classifyVehicle(
+      { make: "Example", model: "Imaginary GT", year: "2026" },
+      DEFAULT_BUILD
+    );
+    expect(unknownVehicle.mapping).toBeNull();
+    expect(unknownVehicle.selectedClass).toBeNull();
+
+    const unknownBuild = classifyVehicle(miata, {
+      ...DEFAULT_BUILD,
+      tires: "unknown"
+    });
+    expect(unknownBuild.selectedClass).toBeNull();
+    expect(unknownBuild.confidence).toBe("manual-review");
+  });
+});
