@@ -54,10 +54,10 @@ Vite uses `base: "./"`, so the build works from a repository subpath.
 
 - `src/lib/classifier.ts` - pure classification engine
 - `src/lib/rules.ts` - explicit modification/category allowance profiles
-- `src/lib/vehicleData.ts` - exact reviewed vehicle lookup and family/package handling
-- `src/data/reviewed-vehicles2026.json` - explicit reviewed selector entries and current placements
+- `src/lib/vehicleData.ts` - broad family/package catalog plus exact reviewed placement lookup
+- `src/data/reviewed-vehicles2026.json` - explicit reviewed placements and current package corrections
 - `src/data/overrides2026.ts` - typed source notes and coverage layers for the reviewed entries
-- `src/data/vehicles.generated.json` - retained legacy import for provenance and validation only; never used by the runtime selector or classifier
+- `src/data/vehicles.generated.json` - broad selector catalog; its class arrays are never used by the runtime classifier
 - `src/components/` - redesigned responsive interface
 - `src/lib/classifier.test.ts` - regression tests
 - `docs/CODE_REVIEW.md` - defects found in the original scaffold
@@ -79,10 +79,10 @@ Important date note:
 
 - The June 2026 and future-dated August 2026 Fastrack Street tables include proposals for `2027` and `2028`. They are not treated as current 2026 classifications in this app unless and until they appear as effective rulebook text or current-year class listings.
 
-The legacy vehicle import is retained from the MIT-licensed `Bjorn248/scca_classifier` project for
-provenance only. It does not populate the live selector and it is never used to assign a class.
-The live selector and runtime class placements come from the explicit reviewed entries in
-`src/data/overrides2026.ts`; anything else stops at manual review. See `THIRD_PARTY_NOTICES.md`.
+The vehicle selector uses the MIT-licensed `Bjorn248/scca_classifier` import for breadth only. Its
+class arrays are never used to assign a class. The runtime class placements come from the explicit
+reviewed entries in `src/data/overrides2026.ts`; anything else stops at manual review. See
+`THIRD_PARTY_NOTICES.md`.
 
 The app intentionally labels its data coverage. A 2026 Street-only entry will not be auto-promoted
 into a modified category without a verified higher-category placement.

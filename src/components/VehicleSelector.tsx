@@ -84,7 +84,7 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
             <option value="">Select year</option>
             {years.map((year) => (
               <option key={year} value={year}>
-                {year === "all" ? "All listed years" : year}
+                {year === "older" ? "Older" : year}
               </option>
             ))}
             <option value={NOT_LISTED}>Not listed</option>
@@ -141,18 +141,12 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
               })
             }
           >
-            <option value="">
-              {variants.some((variant) => variant.value === value.model)
-                ? "Base / standard listing"
-                : "Select exact submodel or package"}
-            </option>
-            {variants
-              .filter((variant) => variant.value !== value.model)
-              .map((variant) => (
+            <option value="">Select exact submodel or package</option>
+            {variants.map((variant) => (
               <option key={variant.value} value={variant.value}>
                 {variant.label}
               </option>
-              ))}
+            ))}
           </select>
         </label>
       )}

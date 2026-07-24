@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { classifyVehicle, classifyVehicleWithMapping } from "./classifier";
 import { DEFAULT_BUILD } from "./rules";
 import type { VehicleMapping } from "./types";
-import { getMakes, getModels, getVehicleVariants } from "./vehicleData";
+import { getMakes, getModels, getVehicleMapping, getVehicleVariants, getYears } from "./vehicleData";
 
 const miata = { make: "Mazda", model: "MX-5 Miata", year: "2016" };
 const reviewedMiataMapping: VehicleMapping = {
@@ -121,7 +121,7 @@ describe("classifyVehicle", () => {
 
   it("exposes reviewed model families and keeps packages in the variant field", () => {
     const models = getModels("Mazda", "2026");
-    expect(models).toEqual(["Mazda3"]);
+    expect(models).toContain("Mazda3");
     expect(models).not.toContain("Mazda3 Turbo");
 
     const variants = getVehicleVariants("Mazda", "Mazda3", "2026");
@@ -130,11 +130,45 @@ describe("classifyVehicle", () => {
 
   it("uses the same family/package shape for a second make", () => {
     const models = getModels("Acura", "2026");
-    expect(models).toEqual(["Integra"]);
+    expect(models).toContain("Integra");
     expect(models).not.toContain("Integra Type S");
 
     const variants = getVehicleVariants("Acura", "Integra", "2026");
     expect(variants.map((variant) => variant.value)).toEqual(["Base", "A-Spec", "Type S"]);
+  });
+
+  it("restores broad year-first catalog coverage without using it for class placement", () => {
+    expect(getYears()).toEqual([
+      "2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018",
+      "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010", "2009",
+      "2008", "2007", "2006", "2005", "2004", "2003", "2002", "2001", "2000",
+      "1999", "1998", "1997", "1996", "1995", "1994", "1993", "1992", "1991",
+      "1990", "older"
+    ]);
+    expect(getMakes("2026")).toContain("Ford");
+    expect(getMakes("2026")).toContain("NOC (Not Otherwise Classified)");
+
+    const mustangModels = getModels("Ford", "2025");
+    expect(mustangModels).toContain("Mustang");
+    expect(mustangModels).not.toContain("Mustang GT");
+    const mustangVariants = getVehicleVariants("Ford", "Mustang", "2025");
+    expect(mustangVariants.map((variant) => variant.value)).toEqual(
+      expect.arrayContaining(["Mustang GT", "Mustang Dark Horse", "Mustang EcoBoost"])
+    );
+    expect(getVehicleMapping({ make: "Ford", model: "Mustang", year: "2025", variant: "Mustang GT" })).toBeNull();
+  });
+
+  it("includes Formula SAE as a separate supplemental vehicle path", () => {
+    expect(getMakes("2026")).toContain("Formula SAE");
+    expect(getModels("Formula SAE", "2026")).toEqual(["Formula SAE"]);
+
+    const result = classifyVehicle(
+      { make: "Formula SAE", model: "Formula SAE", year: "2026" },
+      DEFAULT_BUILD
+    );
+    expect(result.selectedClass).toBeNull();
+    expect(result.supplementalClasses).toContain("fsae");
+    expect(result.confidence).toBe("manual-review");
   });
 
   it("routes an explicitly unlisted vehicle to manual review", () => {

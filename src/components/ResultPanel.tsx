@@ -27,12 +27,13 @@ function ClassificationReason({
   const minimumLegalCategory = result.preparation.minimumLegalCategory;
 
   if (!result.selectedCategory || !result.selectedClass) {
+    const supplementalOnly = result.supplementalClasses.length > 0;
     return (
       <div className="panel classification-reason">
         <div className="section-heading">
           <div>
             <p className="eyebrow">How we got here</p>
-            <h3>Why this needs a human review</h3>
+            <h3>{supplementalOnly ? "Why this is a separate class path" : "Why this needs a human review"}</h3>
           </div>
         </div>
         <p>
@@ -40,9 +41,9 @@ function ClassificationReason({
           {minimumLegalCategory
             ? ` The selected build is modeled as legal starting in ${CATEGORY_LABELS[minimumLegalCategory]}. `
             : " The selected build contains a detail that requires manual rule review. "}
-          We then checked the exact year, model, and submodel or package, but there is no reviewed
-          Appendix A placement that safely completes this result for{" "}
-          {vehicleName || "this vehicle"}.
+          {supplementalOnly
+            ? ` The exact vehicle has a supplemental path (${result.supplementalClasses.map((classId) => classLabel(classId)).join(", ")}), which is kept separate from the principal Street through Modified categories.`
+            : ` We then checked the exact year, model, and submodel or package, but there is no reviewed Appendix A placement that safely completes this result for ${vehicleName || "this vehicle"}.`}
           The category cards below show exactly where the decision stopped.
         </p>
       </div>
@@ -86,6 +87,7 @@ function ClassificationReason({
 export function ResultPanel({ selection, result }: Props) {
   const vehicleName = vehicleSelectionLabel(selection);
   const nationalHistory = getNationalCompetitionHistory(selection);
+  const supplementalOnly = !result.selectedClass && result.supplementalClasses.length > 0;
   const verifiedPrincipalPlacements = result.mapping
     ? result.mapping.classes
         .map((classId) => ({
@@ -124,9 +126,11 @@ export function ResultPanel({ selection, result }: Props) {
           </>
         ) : (
           <>
-            <h2 id="result-title">Manual review required</h2>
+            <h2 id="result-title">{supplementalOnly ? "Supplemental class path" : "Manual review required"}</h2>
             <p>
-              {vehicleName || "Choose an exact vehicle"} does not currently have a safe automatic result.
+              {supplementalOnly
+                ? `${vehicleName || "This vehicle"} is eligible for a separately governed supplemental path.`
+                : `${vehicleName || "Choose an exact vehicle"} does not currently have a safe automatic result.`}
             </p>
           </>
         )}

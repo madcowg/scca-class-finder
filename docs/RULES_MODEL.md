@@ -39,7 +39,7 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 ## Data layers
 
-- `vehicles.generated.json`: legacy import retained for provenance and data-integrity checks only. It is not used by the live selector or runtime classifier.
+- `vehicles.generated.json`: broad selector catalog imported from the MIT-licensed project. Its class arrays are not used by the runtime classifier.
 - `reviewed-vehicles2026.json` and `overrides2026.ts`: explicit reviewed family/package entries and first-party exact placements used by the runtime classifier. They intentionally do not copy previous-year or third-party mappings forward.
 - `rules.ts`: explicit category allowances for the user-facing modification profiles.
 
@@ -53,10 +53,11 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 1. Download the current official Solo Rules from the SCCA Solo Cars and Rules page.
 2. Review Fastrack technical bulletins published after the annual rulebook.
-3. Add a vehicle family or package only when the exact naming and year-specific placement have been reviewed.
-4. Update the current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
-5. Add regression tests for every corrected vehicle or allowance.
-6. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
+3. Update the broad selector catalog for name and year coverage, but never promote its class arrays into runtime decisions.
+4. Add a reviewed vehicle family or package only when the exact naming and year-specific placement have been reviewed.
+5. Update the current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
+6. Add regression tests for every corrected vehicle or allowance.
+7. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
 
 ## Limits
 

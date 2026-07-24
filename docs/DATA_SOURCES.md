@@ -57,10 +57,14 @@ The app does not claim that category allowances automatically carry forward. Eac
 - `street-only` entries for exact current vehicles where only the Street listing was verified from current official text;
 - `verified-classes` entries where the current official review confirmed a few exact classes, but not the full older fallback mapping.
 
-The live selector is intentionally narrower than the legacy import. It exposes only explicit reviewed
-model families and year-specific variants from `src/data/reviewed-vehicles2026.json`. This prevents a trim or
-package from appearing as a duplicate model family and makes an unreviewed car choose the visible
-`Not listed` path instead of receiving a stale-looking result.
+The live selector uses the broad import for coverage, then groups source descriptions into model
+families and year-specific variants. The reviewed JSON supplies corrected current package names and
+placements. This keeps trims out of the model list without pretending that every catalog entry has a
+reviewed automatic class result; unreviewed entries still resolve to manual review.
+
+Catalog-wide `all` year keys are retained for selector coverage across the requested year range. They
+do not prove that a particular trim was manufactured in that year and they never create a class result;
+the exact vehicle still needs a reviewed placement or manual review.
 
 Corrected current-vehicle mappings now include:
 
@@ -78,12 +82,12 @@ Corrected older audited overrides now intentionally stop short of non-official c
 - `Nissan 350Z NISMO (2004-08)` now verifies only the current official `CS` listing.
 - `Porsche Boxster (987.1 base) (2005-08)` now verifies the current official `CS` and `BST` listings without inferring additional classes.
 
-### Legacy import retained for provenance only
+### Broad selection catalog
 
 `src/data/vehicles.generated.json` is derived from the MIT-licensed `Bjorn248/scca_classifier` project.
-It is retained for provenance and data-integrity checks only. It does not populate the live selector,
-and runtime classification never falls back to its class arrays. If `src/data/overrides2026.ts` does
-not contain a reviewed exact placement, the engine returns manual review.
+It provides broad make, model-family, year, and submodel choices. Its class arrays are never used by
+the runtime classifier. If `src/data/overrides2026.ts` does not contain a reviewed exact placement,
+the engine returns manual review.
 
 ## Required maintenance practice
 

@@ -7,7 +7,7 @@ const knownClasses = new Set([
   "ssm", "sm", "smf",
   "xp", "cp", "dp", "ep", "fp",
   "am", "bm", "cm", "dm", "em", "fm",
-  "ssc", "csm", "csx", "evx", "camc", "camt", "cams", "xa", "xb", "xu"
+  "ssc", "csm", "csx", "fsae", "evx", "camc", "camt", "cams", "xa", "xb", "xu"
 ]);
 
 function validateClassIds(classes, label) {
