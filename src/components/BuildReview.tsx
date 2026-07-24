@@ -5,9 +5,11 @@ import { vehicleSelectionLabel } from "../lib/vehicleData";
 interface Props {
   selection: VehicleSelection;
   build: BuildProfile;
+  onBack: () => void;
+  onNext: () => void;
 }
 
-export function BuildReview({ selection, build }: Props) {
+export function BuildReview({ selection, build, onBack, onNext }: Props) {
   const selectedVehicle = vehicleSelectionLabel(selection);
 
   const changedFields = RULE_GROUPS.flatMap((group) => {
@@ -64,6 +66,15 @@ export function BuildReview({ selection, build }: Props) {
           ))}
         </ul>
       )}
+
+      <div className="wizard-actions">
+        <button className="secondary-button" type="button" onClick={onBack}>
+          Back: build details
+        </button>
+        <button className="primary-button" type="button" onClick={onNext}>
+          Show classification result
+        </button>
+      </div>
     </section>
   );
 }

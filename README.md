@@ -17,6 +17,12 @@ This rewrite:
 - stops for manual review instead of guessing;
 - includes tests, data validation, CI, and GitHub Pages deployment.
 
+The interface follows a four-step flow: select an exact vehicle, describe its build, review the
+inputs, and then open the classification result. Build fields default to stock. Results keep the
+current modeled class separate from independent category evaluations, show available lower- and
+higher-preparation paths without implying a linear ladder, and link each rule-ledger reference to
+the official rulebook.
+
 ## Local setup
 
 ```bash
@@ -75,6 +81,11 @@ Important date note:
 The broad vehicle mapping is imported from the MIT-licensed `Bjorn248/scca_classifier` project. See `THIRD_PARTY_NOTICES.md`.
 
 The app intentionally labels its data coverage. A 2026 Street-only entry will not be auto-promoted into a modified category without a verified higher-category mapping.
+
+National competition history is intentionally conservative and source-backed. The result view
+only displays exact vehicle/year records loaded into `src/lib/nationalHistory.ts`; an empty panel
+means the local history dataset has no matching record, not that the vehicle never competed. The
+official SCCA results archive remains the authority for a complete decade review.
 
 ## Important limitation
 

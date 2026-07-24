@@ -4,6 +4,8 @@ import type { BuildField, BuildProfile } from "../lib/types";
 interface Props {
   value: BuildProfile;
   onChange: (value: BuildProfile) => void;
+  onBack: () => void;
+  onNext: () => void;
 }
 
 const BUILD_SECTIONS: Array<{ title: string; description: string; fields: BuildField[] }> = [
@@ -24,7 +26,7 @@ const BUILD_SECTIONS: Array<{ title: string; description: string; fields: BuildF
   }
 ];
 
-export function BuildEditor({ value, onChange }: Props) {
+export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
   const update = (field: BuildField, next: string) => {
     onChange({ ...value, [field]: next });
   };
@@ -36,7 +38,7 @@ export function BuildEditor({ value, onChange }: Props) {
         <div>
           <p className="eyebrow">Preparation legality</p>
           <h2 id="build-title">Describe the complete build</h2>
-          <p>The highest-impact modification controls. Select “unknown” rather than guessing.</p>
+          <p>The highest-impact modification controls. Select "unknown" rather than guessing.</p>
         </div>
       </div>
 
@@ -76,6 +78,15 @@ export function BuildEditor({ value, onChange }: Props) {
             </div>
           </details>
         ))}
+      </div>
+
+      <div className="wizard-actions">
+        <button className="secondary-button" type="button" onClick={onBack}>
+          Back: vehicle
+        </button>
+        <button className="primary-button" type="button" onClick={onNext}>
+          Next: review
+        </button>
       </div>
     </section>
   );

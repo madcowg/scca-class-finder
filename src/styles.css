@@ -90,28 +90,13 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 .brand strong { font-size: 17px; letter-spacing: 0.01em; }
 .brand small { color: #c7c7c7; font-size: 12px; }
 
-.brand-mark {
-  position: relative;
-  width: 45px;
-  height: 45px;
+.brand-logo {
+  width: 48px;
+  height: 58px;
   display: block;
-  overflow: hidden;
-  border: 2px solid var(--red);
-  border-radius: 10px;
-  background: repeating-conic-gradient(#fff 0 25%, #111 0 50%) 0 0 / 15px 15px;
-  box-shadow: 0 0 0 4px rgba(200, 16, 46, 0.16);
+  object-fit: contain;
+  filter: drop-shadow(0 0 0 rgba(200, 16, 46, 0.16));
 }
-
-.brand-mark::after {
-  content: "";
-  position: absolute;
-  inset: 15px -8px auto -8px;
-  height: 7px;
-  background: var(--red);
-  transform: rotate(-28deg);
-}
-
-.brand-mark span { display: none; }
 
 .header-actions {
   display: flex;
@@ -257,7 +242,10 @@ h1 {
   margin: 22px 0 26px;
 }
 
-.progress-nav a {
+.progress-nav button {
+  appearance: none;
+  font: inherit;
+  text-align: left;
   display: grid;
   grid-template-columns: 38px 1fr;
   grid-template-rows: auto auto;
@@ -272,8 +260,11 @@ h1 {
   box-shadow: 0 5px 15px rgba(17, 17, 17, 0.04);
 }
 
-.progress-nav a:hover { border-color: var(--red); transform: translateY(-1px); }
+.progress-nav button:not(:disabled):hover { border-color: var(--red); transform: translateY(-1px); }
+.progress-nav button.active { border-color: var(--red); background: var(--red-soft); }
+.progress-nav button:disabled { cursor: not-allowed; opacity: .58; }
 .progress-nav span { grid-row: 1 / span 2; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--red); font-weight: 900; }
+.progress-nav button.active span { background: var(--surface-dark); }
 .progress-nav strong { font-size: 14px; }
 .progress-nav small { color: var(--quiet); font-size: 12px; }
 
@@ -351,6 +342,27 @@ input { padding-right: 14px; }
 .review-flag { display: inline-flex; margin-left: 8px; padding: 3px 7px; border: 1px solid #d8b66d; border-radius: 999px; color: var(--amber); background: #fff9e9; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
 .review-empty { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
 
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.wizard-actions-end { justify-content: flex-end; }
+.primary-button {
+  min-height: 46px;
+  padding: 9px 17px;
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  color: #fff;
+  background: var(--red);
+  font-weight: 900;
+}
+.primary-button:hover:not(:disabled) { background: var(--red-dark); }
+.primary-button:disabled { cursor: not-allowed; opacity: .48; }
+
 .result-hero { position: relative; overflow: hidden; padding: 30px; color: #fff; background: var(--surface-dark); }
 .result-hero::after { content: ""; position: absolute; right: -45px; top: -55px; width: 185px; height: 185px; opacity: .11; pointer-events: none; background: repeating-conic-gradient(#fff 0 25%, transparent 0 50%) 0 0 / 26px 26px; transform: rotate(14deg); }
 .result-kicker { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; color: #c9c9c9; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; font-weight: 900; }
@@ -373,6 +385,18 @@ input { padding-right: 14px; }
 .supplemental-panel > p { margin: 13px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .class-chip { padding: 7px 10px; color: var(--blue); background: #eff7fc; border-color: #a8cbe3; font-size: 12px; font-weight: 900; }
+
+.category-path-panel, .national-history-panel { padding-bottom: 22px; }
+.category-path-note { margin: 0 0 17px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.path-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.path-group { padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.path-group-empty { min-height: 100%; }
+.path-group h4 { margin: 0 0 11px; font-size: 15px; }
+.path-group p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.path-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.path-list li { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.path-list span { color: var(--muted); font-size: 13px; }
+.path-list strong { color: var(--ink); font-size: 13px; text-align: right; }
 
 .placement-panel { padding-bottom: 17px; }
 .placement-list { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
@@ -414,6 +438,8 @@ td { color: var(--muted); line-height: 1.5; }
 td:first-child { color: var(--ink); font-weight: 800; }
 td strong { display: block; color: var(--ink); margin-bottom: 4px; }
 td span { display: block; }
+.ledger a, .national-history-panel a { color: var(--red-dark); font-weight: 800; }
+.ledger a:hover, .national-history-panel a:hover { color: var(--red); }
 .review-row { background: #fffaf0; }
 
 footer { display: flex; justify-content: space-between; gap: 28px; padding: 28px clamp(18px, 4vw, 64px) 42px; border-top: 1px solid var(--line); color: var(--quiet); font-size: 13px; line-height: 1.55; }
@@ -456,11 +482,13 @@ footer p { max-width: 700px; margin: 0; }
   .intro-band { padding: 30px 21px; border-radius: 13px; }
   .intro-band::after { right: -42px; bottom: -68px; width: 190px; height: 112px; opacity: .08; }
   h1 { font-size: 43px; }
-  .progress-nav a { grid-template-columns: 31px 1fr; padding: 11px; }
+  .progress-nav button { grid-template-columns: 31px 1fr; padding: 11px; }
   .progress-nav span { width: 25px; height: 25px; font-size: 13px; }
   .progress-nav strong { font-size: 13px; }
   .progress-nav small { font-size: 11px; }
   .panel, .result-hero { padding: 20px; border-radius: 12px; }
+  .wizard-actions, .wizard-actions-end { flex-direction: column-reverse; }
+  .wizard-actions button { width: 100%; }
   .panel-heading h2, .section-heading h3 { font-size: 20px; }
   .class-lockup { gap: 12px; }
   .class-code { min-width: 68px; height: 68px; font-size: 22px; border-radius: 11px; }

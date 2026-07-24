@@ -4,11 +4,13 @@ import type { VehicleSelection } from "../lib/types";
 interface Props {
   value: VehicleSelection;
   onChange: (value: VehicleSelection) => void;
+  onNext: () => void;
+  canAdvance: boolean;
 }
 
 const NOT_LISTED = "__not-listed__";
 
-export function VehicleSelector({ value, onChange }: Props) {
+export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) {
   const makes = getMakes();
   const models = value.make ? getModels(value.make) : [];
   const years = value.make && value.model ? getYears(value.make, value.model) : [];
@@ -88,7 +90,6 @@ export function VehicleSelector({ value, onChange }: Props) {
             ))}
             <option value={NOT_LISTED}>Not listed</option>
           </select>
-          <span className="field-help">Type a few letters while the menu is focused to jump to a match.</span>
         </label>
 
         <label>
@@ -162,6 +163,12 @@ export function VehicleSelector({ value, onChange }: Props) {
           </label>
         </div>
       )}
+
+      <div className="wizard-actions wizard-actions-end">
+        <button className="primary-button" type="button" onClick={onNext} disabled={!canAdvance}>
+          Next: build details
+        </button>
+      </div>
     </section>
   );
 }

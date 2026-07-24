@@ -102,3 +102,11 @@ export interface ClassificationResult {
   supplementalClasses: string[];
   messages: string[];
 }
+
+export interface NationalCompetitionRecord {
+  year: number;
+  classId: string;
+  finish: string;
+  sourceLabel: string;
+  sourceUrl: string;
+}

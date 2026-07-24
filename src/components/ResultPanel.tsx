@@ -6,8 +6,10 @@ import {
   classLabel
 } from "../lib/classMetadata";
 import type { ClassificationResult, VehicleSelection } from "../lib/types";
+import { getNationalCompetitionHistory, NATIONAL_ARCHIVE_URL } from "../lib/nationalHistory";
 import { vehicleSelectionLabel } from "../lib/vehicleData";
 import { CategoryLadder } from "./CategoryLadder";
+import { CategoryPaths } from "./CategoryPaths";
 import { RuleLedger } from "./RuleLedger";
 
 interface Props {
@@ -23,6 +25,7 @@ const CONFIDENCE_LABELS: Record<ClassificationResult["confidence"], string> = {
 
 export function ResultPanel({ selection, result }: Props) {
   const vehicleName = vehicleSelectionLabel(selection);
+  const nationalHistory = getNationalCompetitionHistory(selection);
   const verifiedPrincipalPlacements = result.mapping
     ? result.mapping.classes
         .map((classId) => ({
@@ -129,6 +132,45 @@ export function ResultPanel({ selection, result }: Props) {
           </p>
         </div>
       )}
+
+      <CategoryPaths result={result} />
+
+      <div className="panel national-history-panel">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Verified national record</p>
+            <h3>Exact-vehicle Nationals competition history</h3>
+          </div>
+        </div>
+        {nationalHistory.length > 0 ? (
+          <>
+            <p className="category-path-note">
+              These exact-year results are verified in the current loaded dataset. They show that
+              the selected vehicle has appeared competitively in these classes; they do not replace
+              a current rules or preparation review.
+            </p>
+            <ul className="placement-list">
+              {nationalHistory.map((record) => (
+                <li key={`${record.year}-${record.classId}`}>
+                  <span>{record.year} {classLabel(record.classId)}</span>
+                  <strong>
+                    {record.finish}<br />
+                    <a href={record.sourceUrl} target="_blank" rel="noreferrer">
+                      {record.sourceLabel}
+                    </a>
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="category-path-note">
+            No exact-year Nationals record is loaded for this selection yet. That is a data
+            coverage limitation, not evidence that the vehicle has never competed. Browse the
+            official <a href={NATIONAL_ARCHIVE_URL} target="_blank" rel="noreferrer">SCCA results archive</a> for broader history.
+          </p>
+        )}
+      </div>
 
       <div className="panel result-detail-panel">
         <div className="section-heading">

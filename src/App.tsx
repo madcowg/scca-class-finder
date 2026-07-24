@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
+import alsccaLogo from "./assets/ALSCCA_logo.png";
 import { BuildReview } from "./components/BuildReview";
 import { BuildEditor } from "./components/BuildEditor";
 import { ResultPanel } from "./components/ResultPanel";
 import { VehicleSelector } from "./components/VehicleSelector";
 import { classifyVehicle } from "./lib/classifier";
 import { DEFAULT_BUILD } from "./lib/rules";
-import { resolveVehicleSelection } from "./lib/vehicleData";
+import { getVehicleMapping, resolveVehicleSelection } from "./lib/vehicleData";
 import type { BuildProfile, VehicleSelection } from "./lib/types";
+
+type Step = 1 | 2 | 3 | 4;
 
 interface SavedState {
   selection: VehicleSelection;
@@ -68,6 +71,7 @@ export default function App() {
   const initial = useMemo(readInitialState, []);
   const [selection, setSelection] = useState<VehicleSelection>(initial.selection);
   const [build, setBuild] = useState<BuildProfile>(initial.build);
+  const [activeStep, setActiveStep] = useState<Step>(1);
   const [shareLabel, setShareLabel] = useState("Copy share link");
   const [contactOpen, setContactOpen] = useState(false);
 
@@ -79,6 +83,21 @@ export default function App() {
   const loadState = (state: SavedState) => {
     setSelection(resolveVehicleSelection(state.selection));
     setBuild(state.build);
+    setActiveStep(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const vehicleReady = selection.notListed
+    ? Boolean(selection.manualDescription?.trim())
+    : Boolean(
+        selection.make &&
+          selection.model &&
+          selection.year &&
+          getVehicleMapping(selection)
+      );
+
+  const goToStep = (step: Step) => {
+    setActiveStep(step);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -100,11 +119,7 @@ export default function App() {
     <div className="app-shell">
       <header className="site-header">
         <a className="brand" href="./" aria-label="SCCA Solo Class Finder home">
-          <span className="brand-mark" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
+          <img className="brand-logo" src={alsccaLogo} alt="" />
           <span>
             <strong>Solo Class Finder</strong>
             <small>Explainable, conservative classing</small>
@@ -115,11 +130,11 @@ export default function App() {
           <span className="data-badge">2026 rules framework</span>
           <a
             className="header-link"
-            href="https://www.scca.com/pages/solo-cars-and-rules"
+            href="https://www.scca.com/downloads/78494/download"
             target="_blank"
             rel="noreferrer"
           >
-            Current Solo Rules
+            2026 Solo Rulebook
           </a>
           <button
             className="contact-button"
@@ -173,49 +188,97 @@ export default function App() {
         </section>
 
         <nav className="progress-nav" aria-label="Classification steps">
-          <a href="#vehicle-step"><span>1</span><strong>Vehicle</strong><small>Make, model, year</small></a>
-          <a href="#build-step"><span>2</span><strong>Build</strong><small>Preparation details</small></a>
-          <a href="#review-step"><span>3</span><strong>Review</strong><small>Check your inputs</small></a>
-          <a href="#result-step"><span>4</span><strong>Result</strong><small>Class and rule path</small></a>
+          {[
+            [1, "Vehicle", "Make, model, year"],
+            [2, "Build", "Preparation details"],
+            [3, "Review", "Check your inputs"],
+            [4, "Result", "Class and rule path"]
+          ].map(([step, title, description]) => {
+            const stepNumber = step as Step;
+            return (
+              <button
+                className={activeStep === stepNumber ? "progress-step active" : "progress-step"}
+                type="button"
+                key={stepNumber}
+                disabled={stepNumber > activeStep}
+                aria-current={activeStep === stepNumber ? "step" : undefined}
+                onClick={() => goToStep(stepNumber)}
+              >
+                <span>{stepNumber}</span>
+                <strong>{title}</strong>
+                <small>{description}</small>
+              </button>
+            );
+          })}
         </nav>
 
         <div className="workspace">
-          <div className="input-column">
-            <VehicleSelector value={selection} onChange={setSelection} />
+          {activeStep === 1 && (
+            <div className="input-column">
+              <VehicleSelector
+                value={selection}
+                onChange={setSelection}
+                canAdvance={vehicleReady}
+                onNext={() => goToStep(2)}
+              />
 
-            <div className="preset-bar" aria-label="Example builds">
-              <span>Examples</span>
-              <button
-                type="button"
-                onClick={() => loadState({ selection: DEFAULT_SELECTION, build: DEFAULT_BUILD })}
-              >
-                Stock 2016 Miata
-              </button>
-              <button type="button" onClick={() => loadState(TOURING_MIATA)}>
-                AST Miata build
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  loadState({
-                    selection: {
-                      make: "Chevrolet",
-                      model: "Camaro (V6)",
-                      year: "2010"
-                    },
-                    build: DEFAULT_BUILD
-                  })
-                }
-              >
-                Stock 2010 Camaro V6
-              </button>
+              <div className="preset-bar" aria-label="Example builds">
+                <span>Examples</span>
+                <button
+                  type="button"
+                  onClick={() => loadState({ selection: DEFAULT_SELECTION, build: DEFAULT_BUILD })}
+                >
+                  Stock 2016 Miata
+                </button>
+                <button type="button" onClick={() => loadState(TOURING_MIATA)}>
+                  AST Miata build
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    loadState({
+                      selection: {
+                        make: "Chevrolet",
+                        model: "Camaro (V6)",
+                        year: "2010"
+                      },
+                      build: DEFAULT_BUILD
+                    })
+                  }
+                >
+                  Stock 2010 Camaro V6
+                </button>
+              </div>
             </div>
+          )}
 
-            <BuildEditor value={build} onChange={setBuild} />
-            <BuildReview selection={selection} build={build} />
-          </div>
+          {activeStep === 2 && (
+            <div className="input-column">
+              <BuildEditor
+                value={build}
+                onChange={setBuild}
+                onBack={() => goToStep(1)}
+                onNext={() => goToStep(3)}
+              />
+            </div>
+          )}
 
-          <ResultPanel selection={selection} result={result} />
+          {activeStep === 3 && (
+            <div className="input-column">
+              <BuildReview
+                selection={selection}
+                build={build}
+                onBack={() => goToStep(2)}
+                onNext={() => goToStep(4)}
+              />
+            </div>
+          )}
+
+          {activeStep === 4 && (
+            <div className="input-column">
+              <ResultPanel selection={selection} result={result} />
+            </div>
+          )}
         </div>
       </main>
 
