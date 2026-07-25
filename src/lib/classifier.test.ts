@@ -180,7 +180,11 @@ describe("classifyVehicle", () => {
     expect(mustangModels).not.toContain("Mustang GT");
     const mustangVariants = getVehicleVariants("Ford", "Mustang", "2025");
     expect(mustangVariants.map((variant) => variant.value)).toEqual(
-      expect.arrayContaining(["Mustang GT", "Mustang Dark Horse", "Mustang EcoBoost"])
+      expect.arrayContaining([
+        "Mustang GT (5.0L V8)",
+        "Mustang Dark Horse",
+        "Mustang EcoBoost (2.3L turbo)"
+      ])
     );
     expect(getVehicleMapping({ make: "Ford", model: "Mustang", year: "2025", variant: "Mustang GT" })).toBeNull();
   });
@@ -209,6 +213,38 @@ describe("classifyVehicle", () => {
     expect(getVehicleVariants("Ford", "Mustang", "2026").map((variant) => variant.value)).toEqual(
       expect.arrayContaining(["EcoBoost", "Mustang Dark Horse", "Mustang GT (5.0L V8)"])
     );
+  });
+
+  it("removes vehicles that fail or cannot prove the Section 3.1 stability screen", () => {
+    expect(getModels("Ford", "2026")).not.toContain("Bronco");
+    expect(getModels("Ford", "2026")).not.toContain("F-150");
+    expect(getModels("Nissan", "2015")).not.toContain("Juke");
+    expect(getModels("Subaru", "2015")).not.toContain("Forester");
+    expect(getModels("Scion", "2005")).not.toContain("xB");
+    expect(getModels("Nissan", "older").some((model) => /^Juke\b/i.test(model))).toBe(false);
+    expect(getModels("Subaru", "older").some((model) => /^Forester\b/i.test(model))).toBe(false);
+  });
+
+  it("retains dimensionally eligible crossovers and published SSF exceptions", () => {
+    expect(getModels("Ford", "2026")).toContain("Mustang Mach-E");
+    expect(getModels("Tesla", "2024")).toContain("Model Y");
+    expect(getModels("Tesla", "2025")).toContain("Model Y");
+    expect(getModels("Volkswagen", "2023")).toContain("ID.4");
+    expect(getModels("Ford", "2026")).toContain("Mustang");
+  });
+
+  it("keeps only the explicitly eligible performance variant of stability exclusions", () => {
+    const fiestaVariants = getVehicleVariants("Ford", "Fiesta", "2015").map(
+      (variant) => variant.value
+    );
+    expect(fiestaVariants).toEqual(expect.arrayContaining(["Fiesta ST FWD"]));
+    expect(fiestaVariants.every((variant) => /\bST\b/i.test(variant))).toBe(true);
+
+    const fiatVariants = getVehicleVariants("Fiat", "500", "2015").map(
+      (variant) => variant.value
+    );
+    expect(fiatVariants.length).toBeGreaterThan(0);
+    expect(fiatVariants.every((variant) => /\bAbarth\b/i.test(variant))).toBe(true);
   });
 
   it("includes Formula SAE as a separate supplemental vehicle path", () => {

@@ -9,7 +9,8 @@ Review date: 2026-07-24
 3. Official supplemental-class rules
 4. This application's reviewed first-party placements
 5. EPA production identity data, which constrains year/make/model but is not a classification authority
-6. The imported SCCA-oriented name archive, which is not a classification authority
+6. Transport Canada vehicle dimensions served by the official NHTSA vPIC API
+7. The imported SCCA-oriented name archive, which is not a classification authority
 
 Official starting point:
 
@@ -71,10 +72,30 @@ M2/M3/M4/M5 families. The 2026 Ford Mustang's otherwise generic EPA rows are sep
 official EPA engine fields into its 2.3L turbo and 5.0L V8 choices.
 
 The reviewed JSON supplies class-affecting current package names and placements. Exact-year entries
-from the imported SCCA-oriented archive may enrich the package dropdown. A source key of `all` is
-never treated as production-year evidence for 1990-2026; it is available only under `Older`. This
-keeps discontinued makes and trims out of current years while preserving a conservative path for
-pre-1990 cars.
+from the imported SCCA-oriented archive are not allowed to add production families or packages back
+into 1990-2026 after the production and stability filters run. A source key of `all` is available
+only under `Older`. This keeps discontinued, unstable, and ambiguous vehicles out of exact years
+while preserving a conservative path for pre-1990 cars.
+
+### Section 3.1 stability screen
+
+The EPA `VClass` field identifies SUV, pickup, truck, van, minivan, and special-purpose rows that
+need a rollover screen. `npm run import:epa` groups those rows by exact year, make, and model family,
+then requests official Canadian Vehicle Specifications through the NHTSA vPIC API:
+
+- https://vpic.nhtsa.dot.gov/api/
+
+The importer calculates average track as `(front track + rear track) / 2`. A high-risk family is
+retained only when every matched configuration has average track greater than or equal to overall
+height, or when that exact model year and variant is specifically eligible in current Appendix A or
+Appendix B. The Appendix B asterisked models use SCCA's published-SSF exception above 1.30. An
+ambiguous or missing dimensional match is omitted and routed through the interface's `Not listed`
+manual-review path. Appendix A's named stability exclusions are applied before dimensions,
+including the Forester, Juke, and the non-performance variants of the Caliber, 500, and Fiesta.
+
+`src/data/vehicles.eligibility.json` is the generated review ledger. It records the source classes,
+production variants, inclusion/exclusion reason, matched-configuration count, height range, average
+track range, and worst passing margin for each audited family. It is not a class-placement source.
 
 Corrected current-vehicle mappings now include:
 
@@ -96,10 +117,10 @@ Corrected older audited overrides now intentionally stop short of non-official c
 ### Broad selection catalog
 
 `src/data/vehicles.generated.json` is derived from the MIT-licensed `Bjorn248/scca_classifier`
-project. It contributes SCCA-oriented submodel and package names only when a numeric year/range
-explicitly matches the selected year, plus historical names for the `Older` bucket. Its class arrays
-are never used by the runtime classifier. If `src/data/overrides2026.ts` does not contain a reviewed
-exact placement, the engine returns manual review.
+project. It is now limited to historical names under the `Older` bucket and cannot repopulate an
+exact model year. Its class arrays are never used by the runtime classifier. If
+`src/data/overrides2026.ts` does not contain a reviewed exact placement, the engine returns manual
+review.
 
 ## Required maintenance practice
 

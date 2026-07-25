@@ -41,8 +41,9 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 ## Data layers
 
-- `vehicles.production.json`: EPA model-year, make, base-model, and production-variant hierarchy used to constrain the selector.
-- `vehicles.generated.json`: SCCA-oriented package-name archive imported from the MIT-licensed project. Only explicit year keys may enrich an exact year; `all` is limited to the `Older` bucket. Its class arrays are not used by the runtime classifier.
+- `vehicles.production.json`: eligibility-filtered EPA model-year, make, base-model, and production-variant hierarchy used to constrain the selector.
+- `vehicles.eligibility.json`: generated Section 3.1 audit ledger for high-rollover-risk body classes, using official NHTSA/Transport Canada dimensions and explicit current-rule exclusions.
+- `vehicles.generated.json`: historical SCCA-oriented name archive imported from the MIT-licensed project. It is limited to the `Older` bucket and cannot add exact-year vehicles after eligibility filtering. Its class arrays are not used by the runtime classifier.
 - `reviewed-vehicles2026.json` and `overrides2026.ts`: explicit reviewed family/package entries and first-party exact placements used by the runtime classifier. They intentionally do not copy previous-year or third-party mappings forward.
 - `rules.ts`: explicit category allowances for the user-facing modification profiles.
 
@@ -56,8 +57,8 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 1. Download the current official Solo Rules from the SCCA Solo Cars and Rules page.
 2. Review Fastrack technical bulletins published after the annual rulebook.
-3. Refresh the EPA production hierarchy with `npm run import:epa`, then review its diff.
-4. Update SCCA-oriented package names for exact-year coverage, but never promote the imported class arrays into runtime decisions.
+3. Refresh the EPA production hierarchy and Section 3.1 audit with `npm run import:epa`, then review both diffs.
+4. Update exact-year package names only in the reviewed first-party data; never promote imported archive class arrays into runtime decisions.
 5. Add a reviewed vehicle family or package only when the exact naming and year-specific placement have been reviewed.
 6. Update the current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
 7. Add regression tests for every corrected vehicle or allowance.

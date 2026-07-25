@@ -168,6 +168,21 @@ function rawSourceModelsForYear(make: string, year: string): string[] {
     .map(([model]) => model);
 }
 
+function olderSourceModelIsEligible(make: string, model: string): boolean {
+  const identity = `${make} ${model}`;
+  if (/\b(?:pickup|pick-up|truck|suv|minivan|van)\b/i.test(identity)) return false;
+  if (/^Geo\s+Tracker\b/i.test(identity)) return false;
+  if (/^Jeep\s+CJ(?:\b|-|\d)/i.test(identity)) return false;
+  if (/^MINI\s+Countryman\b/i.test(identity) && !/\b(?:JCW|John Cooper Works)\b/i.test(identity)) {
+    return false;
+  }
+  if (/^Nissan\s+Juke\b/i.test(identity)) return false;
+  if (/^Scion\s+(?:iQ|xB)\b/i.test(identity)) return false;
+  if (/^Subaru\s+Forester\b/i.test(identity)) return false;
+  if (/^Suzuki\s+(?:Samurai|Sidekick)\b/i.test(identity)) return false;
+  return true;
+}
+
 function rawCanonicalFamily(make: string, sourceModel: string): string {
   const cleaned = removeMakePrefix(make, sourceModel);
   const alias = MODEL_FAMILY_ALIASES.find(
@@ -213,9 +228,12 @@ function familiesForYear(make: string, year: string): string[] {
     }
   }
 
-  for (const sourceModel of rawSourceModelsForYear(canonicalMakeName, year)) {
-    const family = familyForSourceModel(canonicalMakeName, sourceModel, year, [...families]);
-    families.add(family);
+  if (year === "older") {
+    for (const sourceModel of rawSourceModelsForYear(canonicalMakeName, year)) {
+      if (!olderSourceModelIsEligible(canonicalMakeName, sourceModel)) continue;
+      const family = familyForSourceModel(canonicalMakeName, sourceModel, year, [...families]);
+      families.add(family);
+    }
   }
 
   return uniqueSorted([...families]);
@@ -360,7 +378,9 @@ export function getMakes(year = ""): string[] {
         .filter(
           (make) =>
             !NON_MAKE_SELECTOR_ENTRIES.has(normalizeMakeName(make)) &&
-            rawSourceModelsForYear(make, "older").length > 0
+            rawSourceModelsForYear(make, "older").some((model) =>
+              olderSourceModelIsEligible(normalizeMakeName(make), model)
+            )
         )
         .map(normalizeMakeName),
       ...SPECIAL_VEHICLES.map((entry) => entry.make)
@@ -370,9 +390,6 @@ export function getMakes(year = ""): string[] {
   const makes = new Set(Object.keys(productionVehicles[year] ?? {}).map(normalizeMakeName));
   for (const entry of reviewedEntries) {
     if (entry.year === year) makes.add(canonicalMake(entry.make));
-  }
-  for (const make of Object.keys(vehicles)) {
-    if (rawSourceModelsForYear(make, year).length > 0) makes.add(canonicalMake(make));
   }
   for (const entry of SPECIAL_VEHICLES) makes.add(entry.make);
   return uniqueSorted([...makes]);
@@ -433,22 +450,21 @@ export function getVehicleVariants(
     );
   }
 
-  for (const sourceModel of rawSourceModelsForYear(canonicalMakeName, year)) {
-    if (
-      normalized(familyForSourceModel(canonicalMakeName, sourceModel, year)) !==
-      normalized(family)
-    ) {
-      continue;
+  if (year === "older") {
+    for (const sourceModel of rawSourceModelsForYear(canonicalMakeName, year)) {
+      if (!olderSourceModelIsEligible(canonicalMakeName, sourceModel)) continue;
+      if (
+        normalized(familyForSourceModel(canonicalMakeName, sourceModel, year)) !==
+        normalized(family)
+      ) {
+        continue;
+      }
+      addVariant(
+        variants,
+        sourceModel,
+        variantLabel(canonicalMakeName, family, sourceModel)
+      );
     }
-    const matchingEntry = reviewed.find((entry) =>
-      variantMatchesEntry(entry, sourceModel, family)
-    );
-    if (matchingEntry) continue;
-    addVariant(
-      variants,
-      sourceModel,
-      variantLabel(canonicalMakeName, family, sourceModel)
-    );
   }
 
   for (const entry of SPECIAL_VEHICLES) {
@@ -457,7 +473,11 @@ export function getVehicleVariants(
     }
   }
 
-  if (variants.size <= 1) return [];
+  if (variants.size === 0) return [];
+  if (variants.size === 1) {
+    const onlyVariant = [...variants.values()][0];
+    if (normalized(onlyVariant.value) === normalized(family)) return [];
+  }
   return [...variants.values()].sort((left, right) => {
     const leftBase = /^(?:base|non-|standard)/i.test(left.label) ? 0 : 1;
     const rightBase = /^(?:base|non-|standard)/i.test(right.label) ? 0 : 1;

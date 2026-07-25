@@ -57,8 +57,9 @@ Vite uses `base: "./"`, so the build works from a repository subpath.
 - `src/lib/vehicleData.ts` - strict year/make/model/package hierarchy plus exact reviewed placement lookup
 - `src/data/reviewed-vehicles2026.json` - explicit reviewed placements and current package corrections
 - `src/data/overrides2026.ts` - typed source notes and coverage layers for the reviewed entries
-- `src/data/vehicles.production.json` - EPA production-year hierarchy used by the selector
-- `src/data/vehicles.generated.json` - SCCA-oriented package-name archive; its class arrays are never used by the runtime classifier
+- `src/data/vehicles.production.json` - Section 3.1-filtered EPA production-year hierarchy used by the selector
+- `src/data/vehicles.eligibility.json` - generated stability audit with official dimensions and current-rule exceptions
+- `src/data/vehicles.generated.json` - historical SCCA-oriented name archive used only by the `Older` bucket; its class arrays are never used by the runtime classifier
 - `src/components/` - redesigned responsive interface
 - `src/lib/classifier.test.ts` - regression tests
 - `docs/CODE_REVIEW.md` - defects found in the original scaffold
@@ -82,8 +83,11 @@ Important date note:
 
 The vehicle selector starts with the EPA fuel-economy vehicle dataset so an exact year exposes only
 the makes and model families recorded for that year. EPA `baseModel` and `model` fields provide the
-family/package split. Exact-year SCCA-oriented names may enrich the package dropdown, but an
-unqualified `all` record is never treated as proof that a vehicle existed in every year. The imported
+family/package split. SUV, pickup, truck, van, minivan, and special-purpose rows must also pass the
+Section 3.1 average-track-to-height screen using official NHTSA/Transport Canada dimensions or have
+an exact current SCCA eligibility listing. The historical SCCA-oriented archive cannot add a model
+back to an exact year after this screen. An unqualified `all` record is never treated as proof that a
+vehicle existed in every year. The imported
 class arrays are never used to assign a class. Runtime placements come only from explicit reviewed
 entries in `src/data/overrides2026.ts`; anything else stops at manual review. See
 `docs/DATA_SOURCES.md` and `THIRD_PARTY_NOTICES.md`.

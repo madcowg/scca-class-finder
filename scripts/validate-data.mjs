@@ -79,6 +79,8 @@ if (unknownLegacyClasses.size) {
 
 const productionPath = new URL("../src/data/vehicles.production.json", import.meta.url);
 const production = JSON.parse(await readFile(productionPath, "utf8"));
+const eligibilityPath = new URL("../src/data/vehicles.eligibility.json", import.meta.url);
+const eligibility = JSON.parse(await readFile(eligibilityPath, "utf8"));
 let productionMakes = 0;
 let productionModels = 0;
 let productionVariants = 0;
@@ -89,7 +91,7 @@ for (let year = 1990; year <= 2026; year += 1) {
     throw new Error(`Production catalog is missing model year ${year}`);
   }
   const makes = Object.keys(makeData);
-  if (makes.length < 35) {
+  if (makes.length < 20) {
     throw new Error(`Production catalog has suspiciously low ${year} make coverage: ${makes.length}`);
   }
   productionMakes += makes.length;
@@ -119,6 +121,40 @@ if (
   throw new Error("Production catalog lost the 2026 Mustang engine/package discriminator");
 }
 
+const requiredExclusions = [
+  ["2026", "Ford", "Bronco"],
+  ["2026", "Ford", "F-150"],
+  ["2015", "Nissan", "Juke"],
+  ["2015", "Subaru", "Forester"],
+  ["2005", "Scion", "xB"]
+];
+for (const [year, make, model] of requiredExclusions) {
+  if (production[year]?.[make]?.[model]) {
+    throw new Error(`Stability-ineligible model leaked into production catalog: ${year} ${make} ${model}`);
+  }
+}
+
+const requiredRetentions = [
+  ["2026", "Ford", "Mustang"],
+  ["2026", "Ford", "Mustang Mach-E"],
+  ["2024", "Tesla", "Model Y"],
+  ["2023", "Volkswagen", "ID.4"]
+];
+for (const [year, make, model] of requiredRetentions) {
+  if (!production[year]?.[make]?.[model]) {
+    throw new Error(`Eligible regression model is missing: ${year} ${make} ${model}`);
+  }
+}
+
+if (
+  eligibility.ruleSection !== "SCCA Solo Rules 3.1" ||
+  !Array.isArray(eligibility.decisions) ||
+  eligibility.decisions.length < 500
+) {
+  throw new Error("Vehicle eligibility audit is missing or incomplete");
+}
+
 console.log(`Validated reviewed catalog: ${new Set(reviewed.map((entry) => entry.make)).size} makes, ${reviewedFamilies.size} model families, ${reviewed.length} exact year variants.`);
 console.log(`Validated legacy source archive: ${legacyMakes} makes, ${legacyModels} model descriptions, ${legacyPlacements} year placements.`);
-console.log(`Validated EPA production hierarchy: ${productionMakes} year/make groups, ${productionModels} model families, ${productionVariants} year-specific variants.`);
+console.log(`Validated eligibility-filtered EPA hierarchy: ${productionMakes} year/make groups, ${productionModels} model families, ${productionVariants} year-specific variants.`);
+console.log(`Validated SCCA 3.1 eligibility audit: ${eligibility.decisions.length} model families reviewed.`);
