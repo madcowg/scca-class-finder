@@ -9,8 +9,10 @@
 - License: MIT
 - Repository: https://github.com/Bjorn248/scca_classifier
 
-The upstream mapping is used only as a broad vehicle-selection catalog. Its class arrays are not used
-by the runtime classifier. This project adds its own reviewed family/package catalog, rules engine,
-first-party placements, user interface, tests, and documentation.
+The upstream mapping is used only to enrich exact-year SCCA package names and the pre-1990 `Older`
+bucket. An unqualified `all` entry is not used as model-year evidence, and its class arrays are not
+used by the runtime classifier. This project adds its own production-year hierarchy, reviewed
+family/package catalog, rules engine, first-party placements, user interface, tests, and
+documentation.
 
 The presence of a vehicle/class entry does not replace the current official SCCA Solo Rules or Fastrack bulletins.

@@ -77,5 +77,48 @@ if (unknownLegacyClasses.size) {
   throw new Error(`Unknown legacy class IDs: ${[...unknownLegacyClasses].sort().join(", ")}`);
 }
 
+const productionPath = new URL("../src/data/vehicles.production.json", import.meta.url);
+const production = JSON.parse(await readFile(productionPath, "utf8"));
+let productionMakes = 0;
+let productionModels = 0;
+let productionVariants = 0;
+
+for (let year = 1990; year <= 2026; year += 1) {
+  const makeData = production[String(year)];
+  if (!makeData || typeof makeData !== "object") {
+    throw new Error(`Production catalog is missing model year ${year}`);
+  }
+  const makes = Object.keys(makeData);
+  if (makes.length < 35) {
+    throw new Error(`Production catalog has suspiciously low ${year} make coverage: ${makes.length}`);
+  }
+  productionMakes += makes.length;
+
+  for (const [make, models] of Object.entries(makeData)) {
+    if (!make || !models || typeof models !== "object") {
+      throw new Error(`Invalid production make for ${year}: ${make}`);
+    }
+    for (const [model, variants] of Object.entries(models)) {
+      productionModels += 1;
+      if (!model || !Array.isArray(variants) || variants.length === 0) {
+        throw new Error(`Invalid production model: ${year} ${make} ${model}`);
+      }
+      if (new Set(variants).size !== variants.length) {
+        throw new Error(`Duplicate production variant: ${year} ${make} ${model}`);
+      }
+      productionVariants += variants.length;
+    }
+  }
+}
+
+const currentMustang = production["2026"]?.Ford?.Mustang ?? [];
+if (
+  !currentMustang.includes("Mustang EcoBoost (2.3L turbo)") ||
+  !currentMustang.includes("Mustang GT (5.0L V8)")
+) {
+  throw new Error("Production catalog lost the 2026 Mustang engine/package discriminator");
+}
+
 console.log(`Validated reviewed catalog: ${new Set(reviewed.map((entry) => entry.make)).size} makes, ${reviewedFamilies.size} model families, ${reviewed.length} exact year variants.`);
 console.log(`Validated legacy source archive: ${legacyMakes} makes, ${legacyModels} model descriptions, ${legacyPlacements} year placements.`);
+console.log(`Validated EPA production hierarchy: ${productionMakes} year/make groups, ${productionModels} model families, ${productionVariants} year-specific variants.`);

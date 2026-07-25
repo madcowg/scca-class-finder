@@ -8,7 +8,8 @@ Review date: 2026-07-24
 2. Later Solo technical bulletins published in Fastrack
 3. Official supplemental-class rules
 4. This application's reviewed first-party placements
-5. The imported catalog, which is not a classification authority
+5. EPA production identity data, which constrains year/make/model but is not a classification authority
+6. The imported SCCA-oriented name archive, which is not a classification authority
 
 Official starting point:
 
@@ -57,14 +58,23 @@ The app does not claim that category allowances automatically carry forward. Eac
 - `street-only` entries for exact current vehicles where only the Street listing was verified from current official text;
 - `verified-classes` entries where the current official review confirmed a few exact classes, but not the full older fallback mapping.
 
-The live selector uses the broad import for coverage, then groups source descriptions into model
-families and year-specific variants. The reviewed JSON supplies corrected current package names and
-placements. This keeps trims out of the model list without pretending that every catalog entry has a
-reviewed automatic class result; unreviewed entries still resolve to manual review.
+The live selector starts with `src/data/vehicles.production.json`, generated from the official EPA
+fuel-economy vehicle CSV. Its exact `year`, `make`, `baseModel`, and `model` values establish the
+dependency chain used by the interface. The source was retrieved on July 24, 2026 from:
 
-Catalog-wide `all` year keys are retained for selector coverage across the requested year range. They
-do not prove that a particular trim was manufactured in that year and they never create a class result;
-the exact vehicle still needs a reviewed placement or manual review.
+- https://www.fueleconomy.gov/feg/epadata/vehicles.csv
+
+`baseModel` becomes the model-family choice and distinct `model` values become year-specific
+submodel/configuration choices. A few deterministic normalizations correct source groupings such as
+Mazda `3` to `Mazda3`, Volkswagen `Golf/GTI` to `Golf`, and BMW's combined `M` family to individual
+M2/M3/M4/M5 families. The 2026 Ford Mustang's otherwise generic EPA rows are separated by the
+official EPA engine fields into its 2.3L turbo and 5.0L V8 choices.
+
+The reviewed JSON supplies class-affecting current package names and placements. Exact-year entries
+from the imported SCCA-oriented archive may enrich the package dropdown. A source key of `all` is
+never treated as production-year evidence for 1990-2026; it is available only under `Older`. This
+keeps discontinued makes and trims out of current years while preserving a conservative path for
+pre-1990 cars.
 
 Corrected current-vehicle mappings now include:
 
@@ -85,10 +95,11 @@ Corrected older audited overrides now intentionally stop short of non-official c
 
 ### Broad selection catalog
 
-`src/data/vehicles.generated.json` is derived from the MIT-licensed `Bjorn248/scca_classifier` project.
-It provides broad make, model-family, year, and submodel choices. Its class arrays are never used by
-the runtime classifier. If `src/data/overrides2026.ts` does not contain a reviewed exact placement,
-the engine returns manual review.
+`src/data/vehicles.generated.json` is derived from the MIT-licensed `Bjorn248/scca_classifier`
+project. It contributes SCCA-oriented submodel and package names only when a numeric year/range
+explicitly matches the selected year, plus historical names for the `Older` bucket. Its class arrays
+are never used by the runtime classifier. If `src/data/overrides2026.ts` does not contain a reviewed
+exact placement, the engine returns manual review.
 
 ## Required maintenance practice
 

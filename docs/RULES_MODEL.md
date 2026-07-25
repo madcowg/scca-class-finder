@@ -4,7 +4,7 @@
 
 The app separates three questions that the original scaffold combined incorrectly:
 
-1. **What exact vehicle is being discussed?** The reviewed catalog resolves year, make, model family, and any year-specific trim, engine, drivetrain, or package.
+1. **What exact vehicle is being discussed?** The production catalog first constrains make, model family, and trim/package to the selected model year. The reviewed rules catalog then resolves any exact class-affecting package.
 2. **What preparation categories permit the complete build?** Sections 13 through 18 are evaluated independently from vehicle placement.
 3. **Where is that exact vehicle listed?** Appendix A or another reviewed official placement is then intersected with the legal preparation categories.
 
@@ -41,7 +41,8 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 ## Data layers
 
-- `vehicles.generated.json`: broad selector catalog imported from the MIT-licensed project. Its class arrays are not used by the runtime classifier.
+- `vehicles.production.json`: EPA model-year, make, base-model, and production-variant hierarchy used to constrain the selector.
+- `vehicles.generated.json`: SCCA-oriented package-name archive imported from the MIT-licensed project. Only explicit year keys may enrich an exact year; `all` is limited to the `Older` bucket. Its class arrays are not used by the runtime classifier.
 - `reviewed-vehicles2026.json` and `overrides2026.ts`: explicit reviewed family/package entries and first-party exact placements used by the runtime classifier. They intentionally do not copy previous-year or third-party mappings forward.
 - `rules.ts`: explicit category allowances for the user-facing modification profiles.
 
@@ -55,11 +56,12 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 1. Download the current official Solo Rules from the SCCA Solo Cars and Rules page.
 2. Review Fastrack technical bulletins published after the annual rulebook.
-3. Update the broad selector catalog for name and year coverage, but never promote its class arrays into runtime decisions.
-4. Add a reviewed vehicle family or package only when the exact naming and year-specific placement have been reviewed.
-5. Update the current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
-6. Add regression tests for every corrected vehicle or allowance.
-7. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
+3. Refresh the EPA production hierarchy with `npm run import:epa`, then review its diff.
+4. Update SCCA-oriented package names for exact-year coverage, but never promote the imported class arrays into runtime decisions.
+5. Add a reviewed vehicle family or package only when the exact naming and year-specific placement have been reviewed.
+6. Update the current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
+7. Add regression tests for every corrected vehicle or allowance.
+8. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
 
 The repository also runs ten exact, stock 2026 Appendix A cases from different makes through `npx vite-node scripts/verify-current-cases.ts`.
 

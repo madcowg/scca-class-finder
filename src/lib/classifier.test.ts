@@ -150,7 +150,9 @@ describe("classifyVehicle", () => {
     expect(models).not.toContain("Mazda3 Turbo");
 
     const variants = getVehicleVariants("Mazda", "Mazda3", "2026");
-    expect(variants.map((variant) => variant.value)).toEqual(["Non-turbo", "Turbo"]);
+    expect(variants.map((variant) => variant.value)).toEqual(
+      expect.arrayContaining(["Non-turbo", "Turbo", "Mazda3 4-Door 2WD"])
+    );
   });
 
   it("uses the same family/package shape for a second make", () => {
@@ -171,7 +173,7 @@ describe("classifyVehicle", () => {
       "1990", "older"
     ]);
     expect(getMakes("2026")).toContain("Ford");
-    expect(getMakes("2026")).toContain("NOC (Not Otherwise Classified)");
+    expect(getMakes("2026")).not.toContain("NOC (Not Otherwise Classified)");
 
     const mustangModels = getModels("Ford", "2025");
     expect(mustangModels).toContain("Mustang");
@@ -181,6 +183,32 @@ describe("classifyVehicle", () => {
       expect.arrayContaining(["Mustang GT", "Mustang Dark Horse", "Mustang EcoBoost"])
     );
     expect(getVehicleMapping({ make: "Ford", model: "Mustang", year: "2025", variant: "Mustang GT" })).toBeNull();
+  });
+
+  it("constrains makes, models, and packages to the selected production year", () => {
+    const currentMakes = getMakes("2026");
+    expect(new Set(currentMakes.map((make) => make.toLowerCase())).size).toBe(currentMakes.length);
+    expect(getMakes("1990")).not.toContain("Tesla");
+    expect(getMakes("2009")).toContain("Pontiac");
+    expect(getMakes("2026")).not.toContain("Pontiac");
+    expect(getMakes("older")).not.toContain("NOC (Not Otherwise Classified)");
+
+    expect(getModels("Mazda", "1990")).toContain("MX-5 Miata");
+    expect(getModels("Mazda", "1990")).not.toContain("Mazda3");
+    expect(getModels("Mazda", "2026")).toContain("Mazda3");
+    expect(getModels("Mazda", "2026")).not.toContain("626");
+    expect(getModels("BMW", "1990")).toContain("5 Series");
+    expect(getModels("BMW", "1990")).not.toContain("5 Series; 6-cyl, non-M5)");
+    expect(getModels("Aston Martin", "2026")).toContain("DB12");
+    expect(getModels("Aston Martin", "2026")).not.toContain("DB12 V8");
+
+    const fordModels = getModels("Ford", "2026");
+    expect(fordModels).toContain("Mustang");
+    expect(fordModels).not.toContain("Mustang GT");
+    expect(fordModels).not.toContain("Mustang Dark Horse");
+    expect(getVehicleVariants("Ford", "Mustang", "2026").map((variant) => variant.value)).toEqual(
+      expect.arrayContaining(["EcoBoost", "Mustang Dark Horse", "Mustang GT (5.0L V8)"])
+    );
   });
 
   it("includes Formula SAE as a separate supplemental vehicle path", () => {
