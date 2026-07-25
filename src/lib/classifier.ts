@@ -110,13 +110,23 @@ function evaluateCategory(
   }
 
   if (!mappingAvailable) {
+    const note =
+      category === "street" ||
+      category === "streetTouring" ||
+      category === "streetPrepared"
+        ? "The build passes the modeled preparation checks, but this exact vehicle has no unambiguous current Appendix A placement in this category."
+        : category === "streetModified"
+          ? "Section 16 eligibility depends on original seating, driven wheels, exclusions, and minimum-weight compliance; those controlling facts are not inferred from the model name."
+          : category === "prepared"
+            ? "Section 17 uses explicit Prepared listings, construction limits, displacement, and minimum-weight formulas; this profile does not invent a Prepared class without those facts."
+            : "Section 18 classing depends on vehicle construction, engine displacement, formula or sports-racer specification, and weight; a model-family match alone cannot establish a Modified class.";
     return {
       category,
       status: "not-listed",
       blockers: [],
       preparationLegal: preparation.legalCategories.includes(category),
       mappingAvailable: false,
-      note: "The build passes the modeled preparation checks, but this exact vehicle has no reviewed placement in this category."
+      note
     };
   }
 

@@ -75,9 +75,10 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
       </div>
 
       <div className="vehicle-grid">
-        <label>
+        <label htmlFor="vehicle-year">
           <span>Model year</span>
           <select
+            id="vehicle-year"
             value={value.notListed ? NOT_LISTED : value.year}
             onChange={(event) => changeYear(event.target.value)}
           >
@@ -91,9 +92,10 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
           </select>
         </label>
 
-        <label>
+        <label htmlFor="vehicle-make">
           <span>Make</span>
           <select
+            id="vehicle-make"
             value={value.notListed ? NOT_LISTED : value.make}
             disabled={!value.year || value.notListed}
             onChange={(event) => changeMake(event.target.value)}
@@ -108,9 +110,10 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
           </select>
         </label>
 
-        <label>
+        <label htmlFor="vehicle-model">
           <span>Model family</span>
           <select
+            id="vehicle-model"
             value={value.notListed ? NOT_LISTED : value.model}
             disabled={!value.make || !value.year || value.notListed}
             onChange={(event) => changeModel(event.target.value)}
@@ -127,12 +130,13 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
       </div>
 
       {variants.length > 0 && (
-        <label className="variant-field">
+        <label className="variant-field" htmlFor="vehicle-variant">
           <span>Submodel or package for {value.year}</span>
           <span className="field-help">
             Choose the exact entry. These variants can have different Appendix A placements.
           </span>
           <select
+            id="vehicle-variant"
             value={value.variant ?? ""}
             onChange={(event) =>
               onChange({
@@ -159,9 +163,10 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
             This keeps an unlisted vehicle from being matched to a similar trim by accident.
             Include the year, model, engine, drivetrain, and any package name you know.
           </p>
-          <label>
+          <label htmlFor="manual-vehicle-description">
             <span>Vehicle description</span>
             <input
+              id="manual-vehicle-description"
               type="text"
               value={value.manualDescription ?? ""}
               placeholder="Example: 2026 Example GT, 2.0 turbo, factory performance package"

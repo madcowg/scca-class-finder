@@ -159,7 +159,22 @@ export function ResultPanel({ selection, result }: Props) {
             {verifiedPrincipalPlacements.map((placement) => (
               <li key={`${placement.category}-${placement.classId}`}>
                 <span>{CATEGORY_LABELS[placement.category]}</span>
-                <strong>{classLabel(placement.classId)}</strong>
+                <strong>
+                  {classLabel(placement.classId)}
+                  {result.mapping?.classSources?.[placement.classId] && (
+                    <>
+                      <br />
+                      <a
+                        href={result.mapping.classSources[placement.classId].sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={result.mapping.classSources[placement.classId].description}
+                      >
+                        {result.mapping.classSources[placement.classId].ruleSection}
+                      </a>
+                    </>
+                  )}
+                </strong>
               </li>
             ))}
           </ul>

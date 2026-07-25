@@ -55,6 +55,7 @@ Vite uses `base: "./"`, so the build works from a repository subpath.
 - `src/lib/classifier.ts` - pure classification engine
 - `src/lib/rules.ts` - explicit modification/category allowance profiles
 - `src/lib/vehicleData.ts` - strict year/make/model/package hierarchy plus exact reviewed placement lookup
+- `src/data/appendix-a-2026.json` - extracted official 2026 Street, Street Touring, and Street Prepared listings with page-level sources
 - `src/data/reviewed-vehicles2026.json` - explicit reviewed placements and current package corrections
 - `src/data/overrides2026.ts` - typed source notes and coverage layers for the reviewed entries
 - `src/data/vehicles.production.json` - Section 3.1-filtered EPA production-year hierarchy used by the selector
@@ -62,6 +63,8 @@ Vite uses `base: "./"`, so the build works from a repository subpath.
 - `src/data/vehicles.generated.json` - historical SCCA-oriented name archive used only by the `Older` bucket; its class arrays are never used by the runtime classifier
 - `src/components/` - redesigned responsive interface
 - `src/lib/classifier.test.ts` - regression tests
+- `scripts/extract-rulebook-vehicles.py` - reproducible two-column Appendix A extractor with layout-damage validation
+- `scripts/audit-rulebook-coverage.ts` - exhaustive selector-to-rulebook reachability audit
 - `docs/CODE_REVIEW.md` - defects found in the original scaffold
 - `docs/RULES_MODEL.md` - logic, limits, and update process
 - `docs/DATA_SOURCES.md` - authority hierarchy and source lineage
@@ -88,12 +91,19 @@ Section 3.1 average-track-to-height screen using official NHTSA/Transport Canada
 an exact current SCCA eligibility listing. The historical SCCA-oriented archive cannot add a model
 back to an exact year after this screen. An unqualified `all` record is never treated as proof that a
 vehicle existed in every year. The imported
-class arrays are never used to assign a class. Runtime placements come only from explicit reviewed
-entries in `src/data/overrides2026.ts`; anything else stops at manual review. See
-`docs/DATA_SOURCES.md` and `THIRD_PARTY_NOTICES.md`.
+class arrays are never used to assign a class. See `docs/DATA_SOURCES.md` and
+`THIRD_PARTY_NOTICES.md`.
 
-The app intentionally labels its data coverage. A 2026 Street-only entry will not be auto-promoted
-into a modified category without a verified higher-category placement.
+Runtime placement starts with the versioned official Appendix A dataset. The EPA catalog supplies
+vehicle identity but never a class. Exact official Street descriptions become year-specific package
+choices, and higher Street Touring or Street Prepared placements are attached only when year,
+model family, generation, and exclusion wording remain compatible. The reviewed override file is a
+small correction and supplemental layer, not the primary classifier.
+
+The app intentionally labels its data coverage. NOC rules and Street Modified, Prepared, or Modified
+criteria that depend on seating, driven wheels, displacement, construction, or minimum weight stop
+for manual review until those controlling facts are captured. A missing fact is never replaced by a
+class copied from a prior year or third-party tool.
 
 National competition history is intentionally conservative and source-backed. The result view
 only displays exact vehicle/year records loaded into `src/lib/nationalHistory.ts`; an empty panel

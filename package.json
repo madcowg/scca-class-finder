@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "audit:coverage": "vite-node scripts/audit-rulebook-coverage.ts",
     "validate:data": "node scripts/validate-data.mjs",
     "import:epa": "node scripts/import-epa-vehicles.mjs",
     "import:upstream": "node scripts/import-upstream.mjs"

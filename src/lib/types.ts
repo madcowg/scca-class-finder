@@ -27,12 +27,22 @@ export interface VehicleVariant {
   label: string;
 }
 
+export interface VehicleClassSource {
+  description: string;
+  ruleSection: string;
+  sourceUrl: string;
+}
+
 export interface VehicleMapping {
   selection: VehicleSelection;
   classes: string[];
-  source: "2026-street-overlay" | "2026-current-override";
+  source:
+    | "2026-rulebook-appendix-a"
+    | "2026-street-overlay"
+    | "2026-current-override";
   coverage: "full-mapping" | "street-only" | "verified-classes";
   sourceNote: string;
+  classSources?: Record<string, VehicleClassSource>;
 }
 
 export type BuildProfile = {

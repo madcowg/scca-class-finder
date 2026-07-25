@@ -21,6 +21,94 @@ function validateClassIds(classes, label) {
   }
 }
 
+const appendixPath = new URL("../src/data/appendix-a-2026.json", import.meta.url);
+const appendix = JSON.parse(await readFile(appendixPath, "utf8"));
+const expectedAppendixClasses = {
+  ss: 40, as: 40, bs: 60, cs: 40, ds: 50, es: 20, fs: 80, gs: 50, hs: 250,
+  sst: 40, ast: 5, bst: 50, cst: 20, dst: 35, est: 70, gst: 40,
+  ssp: 70, csp: 35, dsp: 55, esp: 190, fsp: 190
+};
+const appendixCounts = new Map();
+const appendixKeys = new Set();
+
+if (
+  appendix.rulesYear !== 2026 ||
+  appendix.sourceUrl !== "https://www.scca.com/downloads/78494/download" ||
+  !Array.isArray(appendix.listings)
+) {
+  throw new Error("Official 2026 Appendix A dataset metadata is invalid");
+}
+
+for (const listing of appendix.listings) {
+  const label = `${listing.classId} ${listing.manufacturer} ${listing.description}`;
+  validateClassIds([listing.classId], label);
+  if (
+    !["street", "streetTouring", "streetPrepared"].includes(listing.category) ||
+    !listing.manufacturer ||
+    !listing.description ||
+    !Number.isInteger(listing.page) ||
+    listing.page < 194 ||
+    listing.page > 230 ||
+    listing.ruleSection !== `Appendix A - ${listing.classId.toUpperCase()}` ||
+    listing.sourceUrl !== `${appendix.sourceUrl}#page=${listing.page}`
+  ) {
+    throw new Error(`Invalid official Appendix A listing: ${label}`);
+  }
+  if (
+    (listing.description.match(/\(/g) ?? []).length !==
+    (listing.description.match(/\)/g) ?? []).length
+  ) {
+    throw new Error(`Unbalanced official Appendix A listing: ${label}`);
+  }
+  for (const range of listing.yearRanges) {
+    if (
+      !Array.isArray(range) ||
+      range.length !== 2 ||
+      !range.every(Number.isInteger) ||
+      range[0] < 1900 ||
+      range[0] > range[1] ||
+      range[1] > 2026
+    ) {
+      throw new Error(`Invalid Appendix A year range: ${label}`);
+    }
+  }
+
+  const key = `${listing.classId}\u0000${listing.manufacturer}\u0000${listing.description}`;
+  if (appendixKeys.has(key)) throw new Error(`Duplicate Appendix A listing: ${label}`);
+  appendixKeys.add(key);
+  appendixCounts.set(listing.classId, (appendixCounts.get(listing.classId) ?? 0) + 1);
+}
+
+for (const [classId, minimum] of Object.entries(expectedAppendixClasses)) {
+  if ((appendixCounts.get(classId) ?? 0) < minimum) {
+    throw new Error(`Official Appendix A ${classId.toUpperCase()} coverage is incomplete`);
+  }
+}
+
+const appendixLandmarks = [
+  ["ss", "Chevrolet", "Corvette Stingray (C8) (2020-26)"],
+  ["ss", "Dodge & SRT", "Viper (ACR and TA all)"],
+  ["as", "Tesla", "Model Y (AWD/Performance 20-24)"],
+  ["cs", "Mazda", "MX-5 Miata (ND1/ND2 chassis; including RF) (2016-25)"],
+  ["ds", "Ford", "Mustang EcoBoost (2015-26)"],
+  ["ds", "Subaru", "BRZ (2022-26) including tS"],
+  ["fs", "Ford", "Mustang GT (incl. Performance Package Level 1 and Level 2) (2010-26)"],
+  ["ast", "Honda", "S2000-CR"],
+  ["csp", "Mazda", "Mx-5 Miata (ND chassis, all) (2016-25)"]
+];
+for (const [classId, manufacturer, description] of appendixLandmarks) {
+  if (
+    !appendix.listings.some(
+      (listing) =>
+        listing.classId === classId &&
+        listing.manufacturer === manufacturer &&
+        listing.description === description
+    )
+  ) {
+    throw new Error(`Official Appendix A landmark is missing: ${classId} ${manufacturer} ${description}`);
+  }
+}
+
 const reviewedPath = new URL("../src/data/reviewed-vehicles2026.json", import.meta.url);
 const reviewed = JSON.parse(await readFile(reviewedPath, "utf8"));
 const reviewedKeys = new Set();
@@ -155,6 +243,7 @@ if (
 }
 
 console.log(`Validated reviewed catalog: ${new Set(reviewed.map((entry) => entry.make)).size} makes, ${reviewedFamilies.size} model families, ${reviewed.length} exact year variants.`);
+console.log(`Validated official 2026 Appendix A: ${appendix.listings.length} Street, Street Touring, and Street Prepared listings across ${appendixCounts.size} classes.`);
 console.log(`Validated legacy source archive: ${legacyMakes} makes, ${legacyModels} model descriptions, ${legacyPlacements} year placements.`);
 console.log(`Validated eligibility-filtered EPA hierarchy: ${productionMakes} year/make groups, ${productionModels} model families, ${productionVariants} year-specific variants.`);
 console.log(`Validated SCCA 3.1 eligibility audit: ${eligibility.decisions.length} model families reviewed.`);

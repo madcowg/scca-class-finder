@@ -43,8 +43,9 @@ A classing tool should fail safely. The engine returns **manual review required*
 
 - `vehicles.production.json`: eligibility-filtered EPA model-year, make, base-model, and production-variant hierarchy used to constrain the selector.
 - `vehicles.eligibility.json`: generated Section 3.1 audit ledger for high-rollover-risk body classes, using official NHTSA/Transport Canada dimensions and explicit current-rule exclusions.
-- `vehicles.generated.json`: historical SCCA-oriented name archive imported from the MIT-licensed project. It is limited to the `Older` bucket and cannot add exact-year vehicles after eligibility filtering. Its class arrays are not used by the runtime classifier.
-- `reviewed-vehicles2026.json` and `overrides2026.ts`: explicit reviewed family/package entries and first-party exact placements used by the runtime classifier. They intentionally do not copy previous-year or third-party mappings forward.
+- `appendix-a-2026.json`: official 2026 Street, Street Touring, and Street Prepared table rows extracted from reviewed physical page/column segments. Every row retains its class, rule section, physical PDF page, and source link.
+- `vehicles.generated.json`: historical SCCA-oriented name archive imported from the MIT-licensed project. It is limited to the `Older` bucket and cannot provide a runtime class. Its class arrays are not used by the runtime classifier.
+- `reviewed-vehicles2026.json` and `overrides2026.ts`: a small correction and supplemental layer for exact package aliases and separately reviewed classes. It intentionally does not copy previous-year or third-party mappings forward.
 - `rules.ts`: explicit category allowances for the user-facing modification profiles.
 
 ## Current source-handling rules
@@ -58,14 +59,19 @@ A classing tool should fail safely. The engine returns **manual review required*
 1. Download the current official Solo Rules from the SCCA Solo Cars and Rules page.
 2. Review Fastrack technical bulletins published after the annual rulebook.
 3. Refresh the EPA production hierarchy and Section 3.1 audit with `npm run import:epa`, then review both diffs.
-4. Update exact-year package names only in the reviewed first-party data; never promote imported archive class arrays into runtime decisions.
-5. Add a reviewed vehicle family or package only when the exact naming and year-specific placement have been reviewed.
-6. Update the current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
-7. Add regression tests for every corrected vehicle or allowance.
-8. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
+4. Regenerate `appendix-a-2026.json` from the downloaded official PDF, then review the extraction diff and validator landmarks.
+5. Update exact-year aliases only in the reviewed first-party data; never promote imported archive class arrays into runtime decisions.
+6. Update current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
+7. Run `npx vite-node scripts/audit-rulebook-coverage.ts` and investigate every reachability regression.
+8. Add regression tests for every corrected vehicle or allowance.
+9. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
 
 The repository also runs ten exact, stock 2026 Appendix A cases from different makes through `npx vite-node scripts/verify-current-cases.ts`.
 
 ## Limits
 
-This app models common modification boundaries. It does not attempt to encode every dimensional limit, equivalency clause, update/backdate rule, option-package restriction, minimum weight formula, or safety requirement. Those cases must remain manual reviews until represented with exact, testable inputs.
+This app models common modification boundaries and the explicit Street/ST/SP tables. Street Modified,
+Prepared, and Modified are often criteria-driven rather than simple trim tables. The app does not
+claim an automatic result when seating, driven wheels, displacement, equivalency, update/backdate,
+minimum weight, construction, or safety facts are missing. Those cases remain manual reviews until
+represented with exact, testable inputs.

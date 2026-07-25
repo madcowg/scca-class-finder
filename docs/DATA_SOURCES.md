@@ -52,6 +52,23 @@ The app does not claim that category allowances automatically carry forward. Eac
 
 ## Vehicle mapping and selector layers
 
+### Official Appendix A dataset
+
+`src/data/appendix-a-2026.json` contains 1,870 current official rows across all 21 Street,
+Street Touring, and Street Prepared classes. `scripts/extract-rulebook-vehicles.py` reads reviewed
+physical page/column segments because ordinary PDF text extraction interleaves the two columns. It
+validates year ranges, balanced listing text, class coverage, manufacturer headings, and known
+landmark vehicles before writing the versioned JSON.
+
+The runtime uses exact official Street descriptions as package choices. Matching into Street
+Touring or Street Prepared is conservative: the year must apply, the model family must agree, and
+generation or exclusion wording cannot conflict. Every attached class retains a direct link to its
+physical rulebook page.
+
+The exhaustive reachability audit is intentionally separate from accuracy. An unreachable row is a
+coverage issue; a manual-review result caused by NOC wording or missing drivetrain/construction
+facts is the correct safe result, not an error to patch with an inferred class.
+
 ### Current curated overrides
 
 `src/data/overrides2026.ts` now uses two conservative layers:
@@ -71,7 +88,7 @@ Mazda `3` to `Mazda3`, Volkswagen `Golf/GTI` to `Golf`, and BMW's combined `M` f
 M2/M3/M4/M5 families. The 2026 Ford Mustang's otherwise generic EPA rows are separated by the
 official EPA engine fields into its 2.3L turbo and 5.0L V8 choices.
 
-The reviewed JSON supplies class-affecting current package names and placements. Exact-year entries
+The reviewed JSON supplies class-affecting aliases, corrections, and supplemental placements. Exact-year entries
 from the imported SCCA-oriented archive are not allowed to add production families or packages back
 into 1990-2026 after the production and stability filters run. A source key of `all` is available
 only under `Older`. This keeps discontinued, unstable, and ambiguous vehicles out of exact years
@@ -117,10 +134,9 @@ Corrected older audited overrides now intentionally stop short of non-official c
 ### Broad selection catalog
 
 `src/data/vehicles.generated.json` is derived from the MIT-licensed `Bjorn248/scca_classifier`
-project. It is now limited to historical names under the `Older` bucket and cannot repopulate an
-exact model year. Its class arrays are never used by the runtime classifier. If
-`src/data/overrides2026.ts` does not contain a reviewed exact placement, the engine returns manual
-review.
+project. It is limited to historical identity names under the `Older` bucket. Its class arrays are
+never read by the runtime classifier. Current class placement comes from the official versioned
+Appendix A dataset plus the small reviewed first-party correction layer.
 
 ## Required maintenance practice
 

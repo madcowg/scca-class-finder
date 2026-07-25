@@ -19,11 +19,12 @@ function classifyReviewedMiata(build = DEFAULT_BUILD) {
 }
 
 describe("classifyVehicle", () => {
-  it("does not use the catalog as an unreviewed class placement", () => {
+  it("uses the official Appendix A listing rather than the production catalog as authority", () => {
     const result = classifyVehicle(miata, DEFAULT_BUILD);
-    expect(result.selectedCategory).toBeNull();
-    expect(result.selectedClass).toBeNull();
-    expect(result.confidence).toBe("manual-review");
+    expect(result.selectedCategory).toBe("street");
+    expect(result.selectedClass).toBe("cs");
+    expect(result.mapping?.source).toBe("2026-rulebook-appendix-a");
+    expect(result.mapping?.classSources?.cs.sourceUrl).toContain("#page=198");
   });
 
   it("places a reviewed Street-legal 2016 MX-5 in CS", () => {
@@ -134,6 +135,296 @@ describe("classifyVehicle", () => {
     }
   });
 
+  it("resolves exact current rulebook packages across manufacturers", () => {
+    const cases = [
+      {
+        selection: {
+          make: "Ford",
+          model: "Mustang",
+          year: "2026",
+          variant: "Mustang EcoBoost (2015-26)"
+        },
+        expected: "ds"
+      },
+      {
+        selection: {
+          make: "Ford",
+          model: "Mustang",
+          year: "2026",
+          variant: "Mustang GT (incl. Performance Package Level 1 and Level 2) (2010-26)"
+        },
+        expected: "fs"
+      },
+      {
+        selection: {
+          make: "Tesla",
+          model: "Model Y",
+          year: "2024",
+          variant: "Model Y (AWD/Performance 20-24)"
+        },
+        expected: "as"
+      },
+      {
+        selection: {
+          make: "Subaru",
+          model: "BRZ",
+          year: "2023",
+          variant: "BRZ (2022-26) including tS"
+        },
+        expected: "ds"
+      },
+      {
+        selection: {
+          make: "Chevrolet",
+          model: "Corvette",
+          year: "2024",
+          variant: "Corvette Stingray (C8) (2020-26)"
+        },
+        expected: "ss"
+      }
+    ];
+
+    for (const vehicleCase of cases) {
+      const result = classifyVehicle(vehicleCase.selection, DEFAULT_BUILD);
+      expect(result.selectedClass, JSON.stringify(vehicleCase.selection)).toBe(
+        vehicleCase.expected
+      );
+      expect(result.mapping?.source).toBe("2026-rulebook-appendix-a");
+      expect(result.mapping?.classSources?.[vehicleCase.expected]).toBeDefined();
+    }
+  });
+
+  it("intersects a Miata build with matching official category placements", () => {
+    const street = classifyVehicle(miata, DEFAULT_BUILD);
+    expect(street.selectedClass).toBe("cs");
+    expect(street.mapping?.classes).toEqual(expect.arrayContaining(["cs", "ast", "csp"]));
+
+    const touring = classifyVehicle(miata, {
+      ...DEFAULT_BUILD,
+      springs: "coilovers"
+    });
+    expect(touring.selectedCategory).toBe("streetTouring");
+    expect(touring.selectedClass).toBe("ast");
+
+    const prepared = classifyVehicle(miata, {
+      ...DEFAULT_BUILD,
+      tires: "dotBelow200"
+    });
+    expect(prepared.selectedCategory).toBe("streetPrepared");
+    expect(prepared.selectedClass).toBe("csp");
+  });
+
+  it("requires the controlling S2000 package instead of guessing between AS and CS", () => {
+    const ambiguous = classifyVehicle(
+      { make: "Honda", model: "S2000", year: "2008" },
+      DEFAULT_BUILD
+    );
+    expect(ambiguous.selectedClass).toBeNull();
+    expect(ambiguous.confidence).toBe("manual-review");
+
+    const cr = classifyVehicle(
+      { make: "Honda", model: "S2000", year: "2008", variant: "S2000 CR" },
+      DEFAULT_BUILD
+    );
+    const nonCr = classifyVehicle(
+      { make: "Honda", model: "S2000", year: "2008", variant: "S2000 (non-CR)" },
+      DEFAULT_BUILD
+    );
+    expect(cr.selectedClass).toBe("as");
+    expect(nonCr.selectedClass).toBe("cs");
+  });
+
+  it("does not cross-match incompatible chassis generations or explicit exclusions", () => {
+    const modernM3 = getVehicleMapping({
+      make: "BMW",
+      model: "M3",
+      year: "2024",
+      variant: "M3 (with MP Sports Suspension) (G80) (2023-2026)"
+    });
+    expect(modernM3?.classes).toContain("ss");
+    expect(modernM3?.classes).not.toContain("dsp");
+    expect(modernM3?.classes).not.toContain("esp");
+
+    const boxsterFourLiter = getVehicleMapping({
+      make: "Porsche",
+      model: "718",
+      year: "2024",
+      variant: "718 Boxster (GTS 4.0, Spyder) (2017-25)"
+    });
+    expect(boxsterFourLiter?.classes).toContain("ss");
+    expect(boxsterFourLiter?.classes).not.toContain("sst");
+
+    const earlyCorvette = getVehicleMapping({
+      make: "Chevrolet",
+      model: "Corvette",
+      year: "older",
+      variant: "Corvette (1953-62)"
+    });
+    expect(earlyCorvette?.classes).toEqual(expect.arrayContaining(["fs", "dsp"]));
+    expect(earlyCorvette?.classes).not.toContain("bst");
+    expect(earlyCorvette?.classes).not.toContain("ssp");
+
+    const c8Stingray = getVehicleMapping({
+      make: "Chevrolet",
+      model: "Corvette",
+      year: "2024",
+      variant: "Corvette Stingray (C8) (2020-26)"
+    });
+    expect(c8Stingray?.classes).toEqual(expect.arrayContaining(["ss", "ssp"]));
+    expect(c8Stingray?.classSources?.ssp.description).toContain("Stingray");
+  });
+
+  it("does not leak timeless old-generation variants into a modern model year", () => {
+    const nsxVariants = getVehicleVariants("Acura", "NSX", "2017").map(
+      (variant) => variant.value
+    );
+    expect(nsxVariants).toContain("NSX (2017-21)");
+    expect(nsxVariants).not.toContain("NSX (non-Zanardi Edition)");
+    expect(getVehicleVariants("Ford", "Mustang", "2026").map((variant) => variant.value))
+      .not.toContain("Mustang SVT Cobra");
+  });
+
+  it("uses explicit Appendix A year ranges for low-volume cars missing from EPA", () => {
+    expect(getMakes("2013")).toContain("McLaren");
+    expect(getModels("McLaren", "2013")).toContain("MP4-12C");
+    expect(
+      classifyVehicle(
+        {
+          make: "McLaren",
+          model: "MP4-12C",
+          year: "2013",
+          variant: "MP4-12C (2012-14)"
+        },
+        DEFAULT_BUILD
+      ).selectedClass
+    ).toBe("ss");
+
+    expect(getMakes("2010")).toContain("Tesla");
+    expect(
+      classifyVehicle(
+        {
+          make: "Tesla",
+          model: "Roadster",
+          year: "2010",
+          variant: "Roadster (all) (2008-13)"
+        },
+        DEFAULT_BUILD
+    ).selectedClass
+    ).toBe("ss");
+  });
+
+  it("keeps explicit Appendix A vehicles reachable when production names differ", () => {
+    const cases = [
+      {
+        selection: {
+          make: "Audi",
+          model: "TTS Coupe",
+          year: "2009",
+          variant: "TTS (2009-15)"
+        },
+        expectedClass: "ds"
+      },
+      {
+        selection: {
+          make: "Chrysler",
+          model: "300M",
+          year: "1999",
+          variant: "300M (1999-2004)"
+        },
+        expectedClass: "hs"
+      },
+      {
+        selection: {
+          make: "Dodge",
+          model: "Caliber",
+          year: "2008",
+          variant: "Caliber SRT4 (2008-09)"
+        },
+        expectedClass: "hs"
+      },
+      {
+        selection: {
+          make: "Dodge",
+          model: "Ram",
+          year: "2004",
+          variant: "Ram SRT10 (2004-06)"
+        },
+        expectedClass: "fs"
+      },
+      {
+        selection: {
+          make: "Kia",
+          model: "Forte",
+          year: "2014",
+          variant: "Forte5 (2014-18)"
+        },
+        expectedClass: "hs"
+      },
+      {
+        selection: {
+          make: "Mercedes-Benz",
+          model: "C-Class",
+          year: "1999",
+          variant: "280 (1995-2000)"
+        },
+        expectedClass: "hs"
+      },
+      {
+        selection: {
+          make: "Saab",
+          model: "9-2X",
+          year: "2005",
+          variant: "9-2X Aero (2.0L Turbo) (2005-06)"
+        },
+        expectedClass: "hs"
+      },
+      {
+        selection: {
+          make: "Subaru",
+          model: "Legacy/Outback",
+          year: "2005",
+          variant: "Legacy 2.5GT (2005-12)"
+        },
+        expectedClass: "hs"
+      }
+    ];
+
+    for (const vehicleCase of cases) {
+      expect(getModels(vehicleCase.selection.make, vehicleCase.selection.year)).toContain(
+        vehicleCase.selection.model
+      );
+      expect(
+        getVehicleVariants(
+          vehicleCase.selection.make,
+          vehicleCase.selection.model,
+          vehicleCase.selection.year
+        ).map((variant) => variant.value)
+      ).toContain(vehicleCase.selection.variant);
+      expect(classifyVehicle(vehicleCase.selection, DEFAULT_BUILD).selectedClass).toBe(
+        vehicleCase.expectedClass
+      );
+    }
+  });
+
+  it("maps rulebook trim wording onto the production model family", () => {
+    const lotusVariants = getVehicleVariants("Lotus", "Elise/Exige", "2009").map(
+      (variant) => variant.value
+    );
+    expect(lotusVariants).toContain("Elise SC (2008-11)");
+    expect(lotusVariants).toContain("Exige S (non-S260, non-Club Racer) (2007-11)");
+
+    const cla = classifyVehicle(
+      {
+        make: "Mercedes-Benz",
+        model: "CLA-Class",
+        year: "2021",
+        variant: "AMG CLA 35 Coupe (2021)"
+      },
+      DEFAULT_BUILD
+    );
+    expect(cla.selectedClass).toBe("ds");
+  });
+
   it("accepts legacy alias labels for curated current entries", () => {
     const result = classifyVehicle(
       { make: "Acura", model: "Integra Type S (DE5)", year: "2026" },
@@ -151,7 +442,10 @@ describe("classifyVehicle", () => {
 
     const variants = getVehicleVariants("Mazda", "Mazda3", "2026");
     expect(variants.map((variant) => variant.value)).toEqual(
-      expect.arrayContaining(["Non-turbo", "Turbo", "Mazda3 4-Door 2WD"])
+      expect.arrayContaining([
+        "Mazda3 (non-turbo) (2004-26)",
+        "Mazda3 Turbo (2021-26)"
+      ])
     );
   });
 
@@ -161,7 +455,13 @@ describe("classifyVehicle", () => {
     expect(models).not.toContain("Integra Type S");
 
     const variants = getVehicleVariants("Acura", "Integra", "2026");
-    expect(variants.map((variant) => variant.value)).toEqual(["Base", "A-Spec", "Type S"]);
+    expect(variants.map((variant) => variant.value)).toEqual(
+      expect.arrayContaining([
+        "Integra (Base) (2023-26)",
+        "Integra (A-Spec) (2023-26)",
+        "Integra Type S (2024-26)"
+      ])
+    );
   });
 
   it("restores broad year-first catalog coverage without using it for class placement", () => {
@@ -181,12 +481,19 @@ describe("classifyVehicle", () => {
     const mustangVariants = getVehicleVariants("Ford", "Mustang", "2025");
     expect(mustangVariants.map((variant) => variant.value)).toEqual(
       expect.arrayContaining([
-        "Mustang GT (5.0L V8)",
-        "Mustang Dark Horse",
-        "Mustang EcoBoost (2.3L turbo)"
+        "Mustang GT (incl. Performance Package Level 1 and Level 2) (2010-26)",
+        "Mustang Dark Horse (2024-26)",
+        "Mustang EcoBoost (2015-26)"
       ])
     );
-    expect(getVehicleMapping({ make: "Ford", model: "Mustang", year: "2025", variant: "Mustang GT" })).toBeNull();
+    expect(
+      getVehicleMapping({
+        make: "Ford",
+        model: "Mustang",
+        year: "2025",
+        variant: "Mustang GT (incl. Performance Package Level 1 and Level 2) (2010-26)"
+      })?.classes
+    ).toContain("fs");
   });
 
   it("constrains makes, models, and packages to the selected production year", () => {
@@ -211,8 +518,14 @@ describe("classifyVehicle", () => {
     expect(fordModels).not.toContain("Mustang GT");
     expect(fordModels).not.toContain("Mustang Dark Horse");
     expect(getVehicleVariants("Ford", "Mustang", "2026").map((variant) => variant.value)).toEqual(
-      expect.arrayContaining(["EcoBoost", "Mustang Dark Horse", "Mustang GT (5.0L V8)"])
+      expect.arrayContaining([
+        "Mustang EcoBoost (2015-26)",
+        "Mustang Dark Horse (2024-26)",
+        "Mustang GT (incl. Performance Package Level 1 and Level 2) (2010-26)"
+      ])
     );
+    expect(getVehicleVariants("Ford", "Mustang", "2026").map((variant) => variant.value))
+      .not.toContain("Mustang SVO");
   });
 
   it("removes vehicles that fail or cannot prove the Section 3.1 stability screen", () => {
