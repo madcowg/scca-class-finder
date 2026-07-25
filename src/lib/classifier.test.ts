@@ -3,6 +3,7 @@ import { classifyVehicle, classifyVehicleWithMapping } from "./classifier";
 import { DEFAULT_BUILD } from "./rules";
 import type { VehicleMapping } from "./types";
 import { getMakes, getModels, getVehicleMapping, getVehicleVariants, getYears } from "./vehicleData";
+import { CURRENT_APPENDIX_A_STOCK_CASES } from "./verifiedCases";
 
 const miata = { make: "Mazda", model: "MX-5 Miata", year: "2016" };
 const reviewedMiataMapping: VehicleMapping = {
@@ -46,6 +47,19 @@ describe("classifyVehicle", () => {
     expect(result.selectedCategory).toBe("streetTouring");
     expect(result.selectedClass).toBe("ast");
     expect(result.findings.find((finding) => finding.field === "springs")?.section).toBe("14.8.A");
+  });
+
+  it("uses the Section 14 differential allowance without treating it as manual review", () => {
+    const result = classifyReviewedMiata({
+      ...DEFAULT_BUILD,
+      differential: "streetTouringLsd"
+    });
+
+    expect(result.preparation.minimumLegalCategory).toBe("streetTouring");
+    expect(result.selectedClass).toBe("ast");
+    expect(result.findings.find((finding) => finding.field === "differential")?.section).toBe(
+      "14.10.G / 14.10.H"
+    );
   });
 
   it("moves an R-comp build to the first listed SP-or-higher category", () => {
@@ -107,6 +121,17 @@ describe("classifyVehicle", () => {
       DEFAULT_BUILD
     );
     expect(civicTypeR.selectedClass).toBe("as");
+  });
+
+  it("returns the current Appendix A result for ten online-verifiable stock vehicles", () => {
+    for (const vehicleCase of CURRENT_APPENDIX_A_STOCK_CASES) {
+      const result = classifyVehicle(vehicleCase.selection, DEFAULT_BUILD);
+
+      expect(result.selectedClass, vehicleCase.label).toBe(vehicleCase.expectedClass);
+      expect(result.selectedCategory, vehicleCase.label).toBe("street");
+      expect(result.confidence, vehicleCase.label).toBe("limited");
+      expect(result.messages.join(" "), vehicleCase.label).toContain("modification profile");
+    }
   });
 
   it("accepts legacy alias labels for curated current entries", () => {

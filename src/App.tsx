@@ -71,6 +71,8 @@ export default function App() {
           (selection.variant || getVehicleVariants(selection.make, selection.model, selection.year).length <= 1)
       );
 
+  const showIntro = activeStep === 1;
+
   const goToStep = (step: Step) => {
     setActiveStep(step);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -149,13 +151,15 @@ export default function App() {
       )}
 
       <main>
-        <section className="intro-band">
-          <div>
-            <p className="eyebrow">SCCA Solo classification assistant</p>
-            <h1>Let's find where you belong before you go to sign up for your event</h1>
-            <p className="intro-copy">It's ok not to know!</p>
-          </div>
-        </section>
+        {showIntro && (
+          <section className="intro-band">
+            <div>
+              <p className="eyebrow">SCCA Solo classification assistant</p>
+              <h1>Let's find where you belong before you go to sign up for your event</h1>
+              <p className="intro-copy">It's ok not to know!</p>
+            </div>
+          </section>
+        )}
 
         <nav className="progress-nav" aria-label="Classification steps">
           {[

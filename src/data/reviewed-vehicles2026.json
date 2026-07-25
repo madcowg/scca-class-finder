@@ -4,6 +4,7 @@
   { "make": "Acura", "model": "Integra", "variant": "Type S", "year": "2026", "classes": ["as"], "aliases": ["Integra Type S", "Integra Type S (DE5)", "DE5"], "source": "street-only" },
   { "make": "BMW", "model": "M240i", "variant": "M240i (including xDrive)", "year": "2026", "classes": ["es"], "aliases": ["M240i (incl. xDrive)"], "source": "street-only" },
   { "make": "Chevrolet", "model": "Corvette", "variant": "Stingray (C8)", "year": "2026", "classes": ["ss"], "source": "street-only" },
+  { "make": "Ford", "model": "Mustang", "variant": "EcoBoost", "year": "2026", "classes": ["ds"], "aliases": ["Mustang EcoBoost"], "source": "street-only" },
   { "make": "Honda", "model": "Civic", "variant": "Non-Si / non-Type R", "year": "2026", "classes": ["hs"], "source": "street-only" },
   { "make": "Honda", "model": "Civic", "variant": "Si", "year": "2026", "classes": ["gs"], "aliases": ["Civic Si"], "source": "street-only" },
   { "make": "Honda", "model": "Civic", "variant": "Type R", "year": "2026", "classes": ["as"], "aliases": ["Civic Type-R", "Civic Type R", "FL5"], "source": "street-only" },

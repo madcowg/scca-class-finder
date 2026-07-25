@@ -8,7 +8,7 @@ The app separates three questions that the original scaffold combined incorrectl
 2. **What preparation categories permit the complete build?** Sections 13 through 18 are evaluated independently from vehicle placement.
 3. **Where is that exact vehicle listed?** Appendix A or another reviewed official placement is then intersected with the legal preparation categories.
 
-The engine evaluates every modification against every principal category. The displayed category order is a least-prepared preference order, not a claim that SCCA permissions form a linear ladder:
+The engine evaluates every modification against every principal category. The displayed category order is a least-prepared preference order, not a claim that SCCA permissions form a linear ladder. Each category receives its own blocker list from the current rule profiles, so a category never becomes legal merely because an earlier category was legal:
 
 1. Street
 2. Street Touring
@@ -21,6 +21,8 @@ It returns the first category in that preference order that is both:
 
 - legal for every represented modification; and
 - present in the vehicle mapping.
+
+The current 2026 rule profiles are anchored to the rulebook sections for tires, wheels, shocks, brakes, anti-roll bars, suspension, electrical systems, engine/drivetrain, and category-specific bodywork. For example, Street Touring can permit both anti-roll bars and coilover spring perches under Section 14, while Street permits only the specific allowances in Sections 13.5-13.8. A profile marked unknown or outside the represented dimensional limits becomes manual review rather than being promoted by category order.
 
 The result also exposes the **minimum legal category** from the modification set alone. If that category has no reviewed placement for the exact vehicle, the engine may use a later category only when that category is independently legal and independently listed. It never uses a higher class listing to make a modification legal.
 
@@ -58,6 +60,8 @@ A classing tool should fail safely. The engine returns **manual review required*
 5. Update the current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
 6. Add regression tests for every corrected vehicle or allowance.
 7. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
+
+The repository also runs ten exact, stock 2026 Appendix A cases from different makes through `npx vite-node scripts/verify-current-cases.ts`.
 
 ## Limits
 

@@ -405,8 +405,7 @@ export const RULE_GROUPS: RuleGroup[] = [
         label: "Limited-slip differential change within ST rules",
         description: "Requires Street Touring or higher and is subject to drivetrain layout restrictions.",
         allowedCategories: ST_PLUS,
-        section: "14.10.G / 14.10.H",
-        manualReview: true
+        section: "14.10.G / 14.10.H"
       },
       {
         value: "gearOrDrivetrainChange",

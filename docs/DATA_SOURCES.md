@@ -69,6 +69,7 @@ the exact vehicle still needs a reviewed placement or manual review.
 Corrected current-vehicle mappings now include:
 
 - `Acura Integra Type S (2026)` corrected to `AS` from the official Appendix A text instead of the stale `BS` overlay.
+- The ten-case current-rulebook verification set covers 2026 Acura Integra Type S (AS), BMW M240i (ES), Chevrolet Corvette Stingray (SS), Ford Mustang EcoBoost (DS), Honda Civic Type R (AS), Hyundai Ioniq 5 N (SS), Nissan Z (BS), Subaru BRZ (DS), Toyota GR Corolla (BS), and Volkswagen Golf R (DS).
 - `BMW M240i (incl. xDrive) (2026)` corrected to `ES` instead of the stale `FS` overlay.
 - `Honda Civic Type-R (2026)` corrected to `AS` instead of the stale `BS` overlay.
 - `Toyota GR Corolla (2026)` split into exact official package-based entries instead of a single generic `GR Corolla` row.

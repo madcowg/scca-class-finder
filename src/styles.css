@@ -32,6 +32,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     linear-gradient(135deg, rgba(200, 16, 46, 0.035), transparent 38rem),
     var(--bg);
@@ -67,12 +68,12 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
   position: sticky;
   top: 0;
   z-index: 20;
-  min-height: 78px;
+  min-height: 70px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 14px clamp(18px, 4vw, 64px);
+  gap: 14px;
+  padding: 10px clamp(16px, 3vw, 48px);
   border-bottom: 4px solid var(--red);
   background: rgba(17, 17, 17, 0.97);
   box-shadow: 0 8px 25px rgba(17, 17, 17, 0.14);
@@ -87,12 +88,12 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 }
 
 .brand > span:last-child { display: grid; gap: 2px; }
-.brand strong { font-size: 17px; letter-spacing: 0.01em; }
+.brand strong { font-size: 15px; letter-spacing: 0.01em; }
 .brand small { color: #c7c7c7; font-size: 12px; }
 
 .brand-logo {
-  width: 48px;
-  height: 58px;
+  width: 42px;
+  height: 50px;
   display: block;
   object-fit: contain;
   filter: drop-shadow(0 0 0 rgba(200, 16, 46, 0.16));
@@ -103,7 +104,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 7px;
 }
 
 .data-badge, .confidence-badge, .status-pill, .class-chip {
@@ -123,13 +124,13 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 }
 
 .header-link, .secondary-button, .contact-button {
-  min-height: 42px;
+  min-height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  padding: 8px 13px;
-  font-size: 13px;
+  padding: 7px 11px;
+  font-size: 12px;
   font-weight: 800;
   text-decoration: none;
 }
@@ -175,14 +176,14 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 .contact-panel h2 { margin: 0 0 4px; font-size: 20px; }
 .contact-panel p:not(.eyebrow) { max-width: 720px; margin: 0; color: var(--muted); font-size: 14px; }
 
-main { width: min(1220px, 100%); margin: 0 auto; padding: 0 24px 64px; }
+main { width: min(1200px, 100%); margin: 0 auto; padding: 0 20px 48px; }
 
 .intro-band {
   position: relative;
   overflow: hidden;
-  margin-top: 34px;
-  padding: clamp(34px, 6vw, 68px) clamp(24px, 5vw, 62px);
-  border-radius: 18px;
+  margin-top: 24px;
+  padding: clamp(24px, 4vw, 38px) clamp(22px, 4vw, 46px);
+  border-radius: 14px;
   background: var(--surface-dark);
   box-shadow: var(--shadow);
 }
@@ -214,15 +215,14 @@ h1, h2, h3, h4, p { margin-top: 0; }
 h1 {
   position: relative;
   z-index: 1;
-  max-width: 780px;
-  margin-bottom: 18px;
+  max-width: 720px;
+  margin-bottom: 10px;
   color: #fff;
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
-  font-size: clamp(44px, 7vw, 78px);
+  font-family: inherit;
+  font-size: clamp(34px, 4.4vw, 52px);
   font-weight: 900;
-  line-height: 0.98;
-  letter-spacing: 0.005em;
-  text-transform: uppercase;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
 }
 
 .intro-copy {
@@ -231,15 +231,15 @@ h1 {
   max-width: 790px;
   margin-bottom: 0;
   color: #e4e4e4;
-  font-size: clamp(16px, 1.6vw, 19px);
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .progress-nav {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  margin: 22px 0 26px;
+  margin: 16px 0 20px;
 }
 
 .progress-nav button {
@@ -279,7 +279,7 @@ h1 {
   box-shadow: 0 12px 28px rgba(17, 17, 17, 0.06);
 }
 
-.panel { padding: 28px; }
+.panel { padding: 24px; }
 .panel-heading { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 25px; }
 .panel-heading h2, .section-heading h3 { margin: 0 0 7px; font-size: 23px; letter-spacing: -0.02em; }
 .panel-heading p:not(.eyebrow), .section-heading p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
@@ -290,7 +290,7 @@ label { display: grid; gap: 8px; }
 label > span:first-child, .field-title { color: var(--ink); font-size: 14px; font-weight: 800; }
 select, input {
   width: 100%;
-  min-height: 50px;
+  min-height: 46px;
   padding: 0 38px 0 14px;
   border: 1px solid var(--line-strong);
   border-radius: 9px;
@@ -373,7 +373,7 @@ input { padding-right: 14px; }
 .primary-button:hover:not(:disabled) { background: var(--red-dark); }
 .primary-button:disabled { cursor: not-allowed; opacity: .48; }
 
-.result-hero { position: relative; overflow: hidden; padding: 30px; color: #fff; background: var(--surface-dark); }
+.result-hero { position: relative; overflow: hidden; padding: 24px; color: #fff; background: var(--surface-dark); }
 .result-hero::after { content: ""; position: absolute; right: -45px; top: -55px; width: 185px; height: 185px; opacity: .11; pointer-events: none; background: repeating-conic-gradient(#fff 0 25%, transparent 0 50%) 0 0 / 26px 26px; transform: rotate(14deg); }
 .result-kicker { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; color: #c9c9c9; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; font-weight: 900; }
 .confidence-badge { padding: 6px 10px; font-size: 10px; letter-spacing: .08em; }
@@ -476,8 +476,8 @@ footer p { max-width: 700px; margin: 0; }
   .brand small, .data-badge { display: none; }
   .header-actions { gap: 7px; }
   .header-link, .secondary-button, .contact-button { min-height: 38px; padding: 7px 10px; font-size: 12px; }
-  main { padding-inline: 15px; }
-  .intro-band { margin-top: 22px; }
+  main { padding-inline: 14px; }
+  .intro-band { margin-top: 18px; }
   .progress-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .vehicle-grid, .build-grid, .review-grid { grid-template-columns: 1fr; }
   .contact-panel { align-items: flex-start; }
@@ -493,14 +493,14 @@ footer p { max-width: 700px; margin: 0; }
   .header-actions { justify-content: flex-start; }
   .brand strong { font-size: 15px; }
   main { padding-inline: 11px; }
-  .intro-band { padding: 30px 21px; border-radius: 13px; }
+  .intro-band { padding: 22px 18px; border-radius: 12px; }
   .intro-band::after { right: -42px; bottom: -68px; width: 190px; height: 112px; opacity: .08; }
-  h1 { font-size: 43px; }
+  h1 { font-size: clamp(32px, 9vw, 39px); }
   .progress-nav button { grid-template-columns: 31px 1fr; padding: 11px; }
   .progress-nav span { width: 25px; height: 25px; font-size: 13px; }
   .progress-nav strong { font-size: 13px; }
   .progress-nav small { font-size: 11px; }
-  .panel, .result-hero { padding: 20px; border-radius: 12px; }
+  .panel, .result-hero { padding: 18px; border-radius: 12px; }
   .wizard-actions, .wizard-actions-end { flex-direction: column-reverse; }
   .wizard-actions button { width: 100%; }
   .panel-heading h2, .section-heading h3 { font-size: 20px; }

@@ -29,7 +29,7 @@ export const CATEGORY_SECTIONS: Record<PrincipalCategory, string> = {
 
 const categoryClassIds: Record<PrincipalCategory, Set<string>> = {
   street: new Set(["ss", "as", "bs", "cs", "ds", "es", "fs", "gs", "hs", "ssr"]),
-  streetTouring: new Set(["sst", "ast", "bst", "cst", "dst", "est", "gst"]),
+  streetTouring: new Set(["sst", "ast", "bst", "cst", "dst", "est", "gst", "sts", "str", "stu", "stx", "sth"]),
   streetPrepared: new Set(["ssp", "csp", "dsp", "esp", "fsp"]),
   streetModified: new Set(["ssm", "sm", "smf"]),
   prepared: new Set(["xp", "cp", "dp", "ep", "fp"]),
@@ -68,6 +68,11 @@ export const CLASS_NAMES: Record<string, string> = {
   dst: "D Street Touring",
   est: "E Street Touring",
   gst: "G Street Touring",
+  sts: "Street Touring Sport",
+  str: "Street Touring Roadster",
+  stu: "Street Touring Ultra",
+  stx: "Street Touring Xtreme",
+  sth: "Street Touring Hatch",
   ssp: "Super Street Prepared",
   csp: "C Street Prepared",
   dsp: "D Street Prepared",

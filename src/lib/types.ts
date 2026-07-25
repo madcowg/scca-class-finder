@@ -99,6 +99,8 @@ export interface ModificationAssessment {
   /** Least-prepared category permitted by the modification set alone. */
   minimumLegalCategory: PrincipalCategory | null;
   manualFindings: RuleFinding[];
+  /** Independent blockers for each category; categories do not inherit one another's result. */
+  categoryBlockers: Record<PrincipalCategory, RuleFinding[]>;
 }
 
 export interface ClassificationResult {

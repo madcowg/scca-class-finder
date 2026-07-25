@@ -46,22 +46,31 @@ function evaluateFindings(build: BuildProfile): RuleFinding[] {
  */
 function assessModifications(findings: RuleFinding[]): ModificationAssessment {
   const manualFindings = findings.filter((finding) => finding.manualReview);
+  const categoryBlockers = Object.fromEntries(
+    CATEGORY_ORDER.map((category) => [
+      category,
+      findings.filter((finding) => !finding.allowedCategories.includes(category))
+    ])
+  ) as Record<PrincipalCategory, RuleFinding[]>;
+
   if (manualFindings.length > 0) {
     return {
       legalCategories: [],
       minimumLegalCategory: null,
-      manualFindings
+      manualFindings,
+      categoryBlockers
     };
   }
 
-  const legalCategories = CATEGORY_ORDER.filter((category) =>
-    findings.every((finding) => finding.allowedCategories.includes(category))
+  const legalCategories = CATEGORY_ORDER.filter(
+    (category) => categoryBlockers[category].length === 0
   );
 
   return {
     legalCategories,
     minimumLegalCategory: legalCategories[0] ?? null,
-    manualFindings: []
+    manualFindings: [],
+    categoryBlockers
   };
 }
 
@@ -72,9 +81,7 @@ function evaluateCategory(
   preparation: ModificationAssessment
 ): CategoryEvaluation {
   const classId = classForCategory(mapping.classes, category);
-  const blockers = findings.filter(
-    (finding) => !finding.allowedCategories.includes(category)
-  );
+  const blockers = preparation.categoryBlockers[category];
   const manualFindings = findings.filter((finding) => finding.manualReview);
   const preparationLegal = manualFindings.length === 0 && blockers.length === 0;
   const mappingAvailable = Boolean(classId);
