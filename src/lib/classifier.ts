@@ -9,11 +9,12 @@ import type {
   PrincipalCategory,
   RuleFinding,
   VehicleMapping,
-  VehicleSelection
+  VehicleSelection,
+  XtremeStreetEvaluation
 } from "./types";
 
 function evaluateFindings(build: BuildProfile): RuleFinding[] {
-  return RULE_GROUPS.map((group) => {
+  return RULE_GROUPS.filter((group) => group.principalRelevant !== false).map((group) => {
     const selected = findRuleOption(group.field, build[group.field]);
     if (!selected) {
       return {
@@ -34,7 +35,8 @@ function evaluateFindings(build: BuildProfile): RuleFinding[] {
       description: selected.description,
       section: selected.section,
       allowedCategories: selected.allowedCategories,
-      manualReview: Boolean(selected.manualReview)
+      manualReview: Boolean(selected.manualReview),
+      classConstraints: selected.classConstraints
     };
   });
 }
@@ -81,7 +83,16 @@ function evaluateCategory(
   preparation: ModificationAssessment
 ): CategoryEvaluation {
   const classId = classForCategory(mapping.classes, category);
-  const blockers = preparation.categoryBlockers[category];
+  const classSpecificBlockers = classId
+    ? findings.filter((finding) => {
+        const allowedClasses = finding.classConstraints?.[category];
+        return allowedClasses && !allowedClasses.includes(classId);
+      })
+    : [];
+  const blockers = [
+    ...preparation.categoryBlockers[category],
+    ...classSpecificBlockers
+  ];
   const manualFindings = findings.filter((finding) => finding.manualReview);
   const preparationLegal = manualFindings.length === 0 && blockers.length === 0;
   const mappingAvailable = Boolean(classId);
@@ -140,10 +151,159 @@ function evaluateCategory(
   };
 }
 
+const WEIGHT_FLOORS: Record<string, number | null> = {
+  unknown: null,
+  under2180: 0,
+  "2180to2329": 2180,
+  "2330to2479": 2330,
+  "2480to2679": 2480,
+  "2680to2929": 2680,
+  "2930to3179": 2930,
+  "3180plus": 3180
+};
+
+const XTREME_MINIMUMS = {
+  fwd: { xa: 2680, xb: 2180 },
+  rwd: { xa: 2930, xb: 2330 },
+  awd: { xa: 3180, xb: 2480 }
+} as const;
+
+function evaluateXtremeStreet(
+  build: BuildProfile,
+  mapping: VehicleMapping | null
+): XtremeStreetEvaluation {
+  const blockers: string[] = [];
+  const manual: string[] = [];
+  const reasons: string[] = [];
+  const mappedCamClass = mapping?.classes.find((classId) =>
+    ["camc", "camt", "cams"].includes(classId)
+  );
+
+  if (mappedCamClass || build.xtremeVehicleType === "camEligible") {
+    blockers.push("CAM-eligible vehicles are expressly excluded from XA and XB.");
+  } else if (build.xtremeVehicleType === "kitOrComponent") {
+    blockers.push("Owner-completed kit or component cars are excluded from XA and XB.");
+  } else if (build.xtremeVehicleType === "unknown") {
+    manual.push("Confirm that the car is a factory-VIN production road car and is neither CAM-eligible nor an excluded kit/component car.");
+  } else {
+    reasons.push("The selected vehicle type passes the modeled XA/XB production-car exclusions.");
+  }
+
+  if (build.roadEquipment === "missing") {
+    blockers.push("Required headlights, brake lights, turn signals, horn, or factory-equipped wipers are missing or inoperative.");
+  } else if (build.roadEquipment === "unknown") {
+    manual.push("Confirm that every required Section 21 road-equipment item works.");
+  } else {
+    reasons.push("The required Section 21 road equipment is reported functional.");
+  }
+
+  if (build.xtremePowertrain === "electrifiedModified") {
+    blockers.push("XA/XB prohibits changes to a hybrid or EV tractive system or its programming.");
+  } else if (build.xtremePowertrain === "converted") {
+    blockers.push("XA/XB prohibits converting between combustion, hybrid, and electric powertrain types.");
+  } else if (build.xtremePowertrain === "unknown") {
+    manual.push("Identify the original powertrain type and, for a hybrid or EV, confirm that the complete tractive system and programming remain original.");
+  } else {
+    reasons.push(
+      build.xtremePowertrain === "electrifiedFactory"
+        ? "The hybrid/EV tractive system and programming are reported as original."
+        : "The car retains its original internal-combustion powertrain type."
+    );
+  }
+
+  if (build.drivetrainLayout === "converted") {
+    blockers.push("XA/XB prohibits conversion to a different driven-wheel layout.");
+  } else if (build.drivetrainLayout === "unknown") {
+    manual.push("Identify whether the factory driven-wheel layout is FWD, RWD, or AWD.");
+  }
+
+  if (!["street200", "vitourP1"].includes(build.tires)) {
+    blockers.push("XA/XB permits only Section 13.3 Street-eligible tires or the Vitour Tempesta P1/P1+ exception.");
+  } else {
+    reasons.push("The selected tire path is permitted by Section 21.4.");
+  }
+
+  if (build.aero === "activeOrExtreme") {
+    manual.push("Confirm the aero dimensions and lock any in-motion-adjustable wing in one position.");
+  }
+  if (build.body === "tubeFrame") {
+    manual.push("Confirm that the body still has the recognizable shape of the original make and model.");
+  }
+  if (build.other === "unlisted") {
+    manual.push("Describe every unlisted modification so its Section 21 legality can be checked.");
+  }
+
+  const weightFloor = WEIGHT_FLOORS[build.competitionWeight];
+  const drivetrain =
+    build.drivetrainLayout === "fwd" ||
+    build.drivetrainLayout === "rwd" ||
+    build.drivetrainLayout === "awd"
+      ? build.drivetrainLayout
+      : null;
+
+  if (weightFloor === null || weightFloor === undefined) {
+    manual.push("Provide measured competition weight with the driver; published curb weight is not sufficient.");
+  }
+
+  if (blockers.length > 0) {
+    return {
+      status: "blocked",
+      eligibleClasses: [],
+      recommendedClass: null,
+      reasons,
+      blockers
+    };
+  }
+
+  if (manual.length > 0 || !drivetrain || weightFloor === null || weightFloor === undefined) {
+    return {
+      status: "manual-review",
+      eligibleClasses: [],
+      recommendedClass: null,
+      reasons,
+      blockers: manual
+    };
+  }
+
+  const minimums = XTREME_MINIMUMS[drivetrain];
+  const eligibleClasses: Array<"xa" | "xb"> = [];
+  if (weightFloor >= minimums.xa) eligibleClasses.push("xa");
+  if (weightFloor >= minimums.xb) eligibleClasses.push("xb");
+
+  if (eligibleClasses.length === 0) {
+    return {
+      status: "blocked",
+      eligibleClasses: [],
+      recommendedClass: null,
+      reasons,
+      blockers: [
+        `The reported weight band is below the ${minimums.xb} lb XB minimum for ${drivetrain.toUpperCase()}.`
+      ]
+    };
+  }
+
+  const recommendedClass = eligibleClasses.includes("xa") ? "xa" : "xb";
+  reasons.push(
+    `${recommendedClass.toUpperCase()} is the closest minimum-weight match for the reported ${drivetrain.toUpperCase()} competition-weight band.`
+  );
+  if (eligibleClasses.length > 1) {
+    reasons.push("Both XA and XB pass the objective minimum-weight check; they are separate class descriptions, not preparation steps.");
+  }
+
+  return {
+    status: "eligible",
+    eligibleClasses,
+    recommendedClass,
+    reasons,
+    blockers: []
+  };
+}
+
 function buildMessages(
   mapping: VehicleMapping,
   preparation: ModificationAssessment,
-  evaluations: CategoryEvaluation[]
+  evaluations: CategoryEvaluation[],
+  xtremeStreet: XtremeStreetEvaluation
 ): string[] {
   const messages: string[] = [];
   const selected = evaluations.find((evaluation) => evaluation.status === "eligible");
@@ -160,7 +320,11 @@ function buildMessages(
     );
   }
 
-  if (!selected) {
+  if (!selected && xtremeStreet.status === "eligible" && xtremeStreet.recommendedClass) {
+    messages.push(
+      `No principal category is complete for this build, but the separately evaluated Section 21 path supports ${xtremeStreet.recommendedClass.toUpperCase()}.`
+    );
+  } else if (!selected) {
     messages.push(
       "No principal category is both legal for the selected modifications and reviewed for this exact vehicle. Manual review is required."
     );
@@ -168,11 +332,13 @@ function buildMessages(
 
   if (preparation.manualFindings.length > 0) {
     messages.push(
-      "One or more selections are intentionally not auto-classed because exact dimensions, construction, or rule wording control eligibility."
+      !selected && xtremeStreet.status === "eligible"
+        ? "The selected build cannot be auto-placed in a principal Street-through-Modified category, but it passed the independent Section 21 Xtreme Street checks."
+        : "One or more selections are intentionally not auto-classed because exact dimensions, construction, or rule wording control eligibility."
     );
   }
 
-  if (mapping.coverage !== "full-mapping") {
+  if (mapping.coverage !== "full-mapping" && selected) {
     messages.push(
       "Only the exact placements listed in the current source review are used. Older, similar, or unverified category mappings are not carried forward."
     );
@@ -191,17 +357,25 @@ export function classifyVehicleWithMapping(
   const evaluations = CATEGORY_ORDER.map((category) =>
     evaluateCategory(category, mapping, findings, preparation)
   );
-  const selected = evaluations.find((evaluation) => evaluation.status === "eligible");
-  const supplementalClasses = mapping.classes.filter((classId) =>
-    SUPPLEMENTAL_CLASS_IDS.has(classId)
-  );
+  const selectedPrincipal = evaluations.find((evaluation) => evaluation.status === "eligible");
+  const xtremeStreet = evaluateXtremeStreet(build, mapping);
+  const selectedClass =
+    selectedPrincipal?.classId ??
+    (xtremeStreet.status === "eligible" ? xtremeStreet.recommendedClass : null);
+  const supplementalClasses = [
+    ...new Set([
+      ...mapping.classes.filter((classId) => SUPPLEMENTAL_CLASS_IDS.has(classId)),
+      ...xtremeStreet.eligibleClasses
+    ])
+  ];
 
   return {
     mapping,
-    selectedCategory: selected?.category ?? null,
-    selectedClass: selected?.classId ?? null,
+    selectedCategory: selectedPrincipal?.category ?? null,
+    selectedClass,
     confidence:
-      !selected || preparation.manualFindings.length > 0
+      !selectedClass ||
+      (Boolean(selectedPrincipal) && preparation.manualFindings.length > 0)
         ? "manual-review"
         : mapping.coverage !== "full-mapping"
           ? "limited"
@@ -210,7 +384,8 @@ export function classifyVehicleWithMapping(
     findings,
     preparation,
     supplementalClasses,
-    messages: buildMessages(mapping, preparation, evaluations)
+    xtremeStreet,
+    messages: buildMessages(mapping, preparation, evaluations, xtremeStreet)
   };
 }
 
@@ -221,6 +396,7 @@ export function classifyVehicle(
   const findings = evaluateFindings(build);
   const preparation = assessModifications(findings);
   const mapping = getVehicleMapping(selection);
+  const xtremeStreet = evaluateXtremeStreet(build, mapping);
 
   if (!mapping) {
     const vehicleMessage = selection.notListed
@@ -242,6 +418,7 @@ export function classifyVehicle(
       findings,
       preparation,
       supplementalClasses: [],
+      xtremeStreet,
       messages: [
         vehicleMessage,
         preparation.minimumLegalCategory

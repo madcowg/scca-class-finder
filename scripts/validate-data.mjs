@@ -2,12 +2,13 @@ import { readFile } from "node:fs/promises";
 
 const knownClasses = new Set([
   "ss", "as", "bs", "cs", "ds", "es", "fs", "gs", "hs", "ssr",
-  "sst", "ast", "bst", "cst", "dst", "est", "gst",
-  "ssp", "csp", "dsp", "esp", "fsp",
+  "sst", "ast", "bst", "cst", "dst", "est", "gst", "sts", "str", "stu", "stx", "sth", "stf", "stp",
+  "ssp", "asp", "bsp", "csp", "dsp", "esp", "fsp",
   "ssm", "sm", "smf",
-  "xp", "cp", "dp", "ep", "fp",
-  "am", "bm", "cm", "dm", "em", "fm",
-  "ssc", "csm", "csx", "fsae", "evx", "camc", "camt", "cams", "xa", "xb", "xu"
+  "xp", "bp", "cp", "dp", "ep", "fp",
+  "am", "bm", "cm", "dm", "em", "fm", "km",
+  "ja", "jb", "jc", "ssc", "csm", "csx", "fsae", "evx", "hcr", "hcs",
+  "camc", "camt", "cams", "xs", "xa", "xb", "xu"
 ]);
 
 function validateClassIds(classes, label) {
@@ -165,6 +166,69 @@ if (unknownLegacyClasses.size) {
   throw new Error(`Unknown legacy class IDs: ${[...unknownLegacyClasses].sort().join(", ")}`);
 }
 
+const nationalsPath = new URL("../src/data/nationals-winners-2016-2025.json", import.meta.url);
+const nationals = JSON.parse(await readFile(nationalsPath, "utf8"));
+const expectedNationalsYears = [2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025];
+const knownTireManufacturers = new Set([
+  "Avon", "BFGoodrich", "Bridgestone", "Continental", "Dunlop", "Falken",
+  "Goodyear", "Hoosier", "Kumho", "Michelin", "Multi", "Nankang", "Nexen",
+  "Other", "Pirelli", "Toyo", "Vitour", "Yokohama"
+]);
+const nationalsKeys = new Set();
+
+if (
+  JSON.stringify(nationals.eventYears) !== JSON.stringify(expectedNationalsYears) ||
+  JSON.stringify(nationals.cancelledYears) !== JSON.stringify([2020]) ||
+  nationals.sourceArchive !== "https://www.scca.com/pages/solo-archives" ||
+  !nationals.policy?.includes("tire size and model are not present") ||
+  !Array.isArray(nationals.records) ||
+  nationals.records.length < 630
+) {
+  throw new Error("Ten-year Solo Nationals winner dataset metadata or coverage is incomplete");
+}
+
+for (const record of nationals.records) {
+  const label = `${record.eventYear} ${record.classId} ${record.division}`;
+  validateClassIds([record.classId], label);
+  if (
+    !expectedNationalsYears.includes(record.eventYear) ||
+    !["open", "ladies"].includes(record.division) ||
+    record.finish !== 1 ||
+    !record.vehicle ||
+    !record.sourceUrl
+  ) {
+    throw new Error(`Invalid Solo Nationals winner record: ${label}`);
+  }
+  if (
+    record.tireManufacturer !== null &&
+    !knownTireManufacturers.has(record.tireManufacturer)
+  ) {
+    throw new Error(`Unknown Solo Nationals tire manufacturer: ${label} ${record.tireManufacturer}`);
+  }
+  const key = `${record.eventYear}\u0000${record.classId}\u0000${record.division}`;
+  if (nationalsKeys.has(key)) throw new Error(`Duplicate Solo Nationals class winner: ${label}`);
+  nationalsKeys.add(key);
+}
+
+const nationalsLandmarks = [
+  [2016, "cs", "Mazda"],
+  [2022, "ss", "Porsche"],
+  [2024, "cs", "Mazda"],
+  [2025, "xb", "Mazda"]
+];
+for (const [eventYear, classId, vehicleText] of nationalsLandmarks) {
+  if (
+    !nationals.records.some(
+      (record) =>
+        record.eventYear === eventYear &&
+        record.classId === classId &&
+        record.vehicle.includes(vehicleText)
+    )
+  ) {
+    throw new Error(`Solo Nationals landmark is missing: ${eventYear} ${classId} ${vehicleText}`);
+  }
+}
+
 const productionPath = new URL("../src/data/vehicles.production.json", import.meta.url);
 const production = JSON.parse(await readFile(productionPath, "utf8"));
 const eligibilityPath = new URL("../src/data/vehicles.eligibility.json", import.meta.url);
@@ -245,5 +309,6 @@ if (
 console.log(`Validated reviewed catalog: ${new Set(reviewed.map((entry) => entry.make)).size} makes, ${reviewedFamilies.size} model families, ${reviewed.length} exact year variants.`);
 console.log(`Validated official 2026 Appendix A: ${appendix.listings.length} Street, Street Touring, and Street Prepared listings across ${appendixCounts.size} classes.`);
 console.log(`Validated legacy source archive: ${legacyMakes} makes, ${legacyModels} model descriptions, ${legacyPlacements} year placements.`);
+console.log(`Validated ten-year Solo Nationals winners: ${nationals.records.length} class winners across ${nationals.eventYears.length} held events; 2020 canceled.`);
 console.log(`Validated eligibility-filtered EPA hierarchy: ${productionMakes} year/make groups, ${productionModels} model families, ${productionVariants} year-specific variants.`);
 console.log(`Validated SCCA 3.1 eligibility audit: ${eligibility.decisions.length} model families reviewed.`);

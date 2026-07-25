@@ -29,10 +29,10 @@ export const CATEGORY_SECTIONS: Record<PrincipalCategory, string> = {
 
 const categoryClassIds: Record<PrincipalCategory, Set<string>> = {
   street: new Set(["ss", "as", "bs", "cs", "ds", "es", "fs", "gs", "hs", "ssr"]),
-  streetTouring: new Set(["sst", "ast", "bst", "cst", "dst", "est", "gst", "sts", "str", "stu", "stx", "sth"]),
-  streetPrepared: new Set(["ssp", "csp", "dsp", "esp", "fsp"]),
+  streetTouring: new Set(["sst", "ast", "bst", "cst", "dst", "est", "gst", "sts", "str", "stu", "stx", "sth", "stf", "stp"]),
+  streetPrepared: new Set(["ssp", "asp", "bsp", "csp", "dsp", "esp", "fsp"]),
   streetModified: new Set(["ssm", "sm", "smf"]),
-  prepared: new Set(["xp", "cp", "dp", "ep", "fp"]),
+  prepared: new Set(["xp", "bp", "cp", "dp", "ep", "fp"]),
   modified: new Set(["am", "bm", "cm", "dm", "em", "fm"])
 };
 
@@ -45,6 +45,7 @@ export const SUPPLEMENTAL_CLASS_IDS = new Set([
   "camc",
   "camt",
   "cams",
+  "xs",
   "xa",
   "xb",
   "xu"
@@ -73,7 +74,11 @@ export const CLASS_NAMES: Record<string, string> = {
   stu: "Street Touring Ultra",
   stx: "Street Touring Xtreme",
   sth: "Street Touring Hatch",
+  stf: "Street Touring FWD (historical)",
+  stp: "Street Touring Pony (historical)",
   ssp: "Super Street Prepared",
+  asp: "A Street Prepared (historical)",
+  bsp: "B Street Prepared (historical)",
   csp: "C Street Prepared",
   dsp: "D Street Prepared",
   esp: "E Street Prepared",
@@ -82,6 +87,7 @@ export const CLASS_NAMES: Record<string, string> = {
   sm: "Street Modified",
   smf: "Street Modified FWD",
   xp: "X Prepared",
+  bp: "B Prepared (historical)",
   cp: "C Prepared",
   dp: "D Prepared",
   ep: "E Prepared",
@@ -92,6 +98,12 @@ export const CLASS_NAMES: Record<string, string> = {
   dm: "D Modified",
   em: "E Modified",
   fm: "F Modified",
+  km: "Kart Modified",
+  ja: "Formula Junior A",
+  jb: "Formula Junior B",
+  jc: "Formula Junior C",
+  hcr: "Heritage Classic Race",
+  hcs: "Heritage Classic Street",
   ssc: "Solo Spec Coupe",
   csm: "Club Spec Mustang",
   csx: "Club Spec MX-5",
@@ -100,6 +112,7 @@ export const CLASS_NAMES: Record<string, string> = {
   camc: "Classic American Muscle Contemporary",
   camt: "Classic American Muscle Traditional",
   cams: "Classic American Muscle Sports",
+  xs: "Xtreme Street S (2023 experimental)",
   xa: "Xtreme Street A",
   xb: "Xtreme Street B",
   xu: "Xtreme Street Unlimited"

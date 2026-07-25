@@ -63,6 +63,11 @@ export type BuildProfile = {
   interior: string;
   body: string;
   other: string;
+  xtremeVehicleType: string;
+  drivetrainLayout: string;
+  xtremePowertrain: string;
+  competitionWeight: string;
+  roadEquipment: string;
 };
 
 export type BuildField = keyof BuildProfile;
@@ -74,6 +79,7 @@ export interface RuleOption {
   allowedCategories: PrincipalCategory[];
   section: string;
   manualReview?: boolean;
+  classConstraints?: Partial<Record<PrincipalCategory, string[]>>;
 }
 
 export interface RuleGroup {
@@ -81,6 +87,7 @@ export interface RuleGroup {
   title: string;
   help: string;
   options: RuleOption[];
+  principalRelevant?: boolean;
 }
 
 export interface RuleFinding {
@@ -91,6 +98,7 @@ export interface RuleFinding {
   section: string;
   allowedCategories: PrincipalCategory[];
   manualReview: boolean;
+  classConstraints?: Partial<Record<PrincipalCategory, string[]>>;
 }
 
 export interface CategoryEvaluation {
@@ -122,7 +130,16 @@ export interface ClassificationResult {
   findings: RuleFinding[];
   preparation: ModificationAssessment;
   supplementalClasses: string[];
+  xtremeStreet: XtremeStreetEvaluation;
   messages: string[];
+}
+
+export interface XtremeStreetEvaluation {
+  status: "eligible" | "blocked" | "manual-review";
+  eligibleClasses: Array<"xa" | "xb">;
+  recommendedClass: "xa" | "xb" | null;
+  reasons: string[];
+  blockers: string[];
 }
 
 export interface NationalCompetitionRecord {
@@ -131,4 +148,8 @@ export interface NationalCompetitionRecord {
   finish: string;
   sourceLabel: string;
   sourceUrl: string;
+  division: "open" | "ladies";
+  vehicle: string;
+  vehicleYear: number | null;
+  tireManufacturer: string | null;
 }

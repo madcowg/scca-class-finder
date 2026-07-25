@@ -61,9 +61,11 @@ Vite uses `base: "./"`, so the build works from a repository subpath.
 - `src/data/vehicles.production.json` - Section 3.1-filtered EPA production-year hierarchy used by the selector
 - `src/data/vehicles.eligibility.json` - generated stability audit with official dimensions and current-rule exceptions
 - `src/data/vehicles.generated.json` - historical SCCA-oriented name archive used only by the `Older` bucket; its class arrays are never used by the runtime classifier
+- `src/data/nationals-winners-2016-2025.json` - official Solo Nationals class winners for the latest ten-year window
 - `src/components/` - redesigned responsive interface
 - `src/lib/classifier.test.ts` - regression tests
 - `scripts/extract-rulebook-vehicles.py` - reproducible two-column Appendix A extractor with layout-damage validation
+- `scripts/import-nationals-results.py` - coordinate-aware importer for official annual Nationals result PDFs
 - `scripts/audit-rulebook-coverage.ts` - exhaustive selector-to-rulebook reachability audit
 - `docs/CODE_REVIEW.md` - defects found in the original scaffold
 - `docs/RULES_MODEL.md` - logic, limits, and update process
@@ -102,13 +104,18 @@ small correction and supplemental layer, not the primary classifier.
 
 The app intentionally labels its data coverage. NOC rules and Street Modified, Prepared, or Modified
 criteria that depend on seating, driven wheels, displacement, construction, or minimum weight stop
-for manual review until those controlling facts are captured. A missing fact is never replaced by a
-class copied from a prior year or third-party tool.
+for manual review until those controlling facts are captured. Xtreme Street is evaluated separately
+under Section 21 using production-car eligibility, road equipment, tires, original drivetrain and
+powertrain type, and competition weight with the driver. A missing fact is never replaced by a class
+copied from a prior year or third-party tool.
 
 National competition history is intentionally conservative and source-backed. The result view
-only displays exact vehicle/year records loaded into `src/lib/nationalHistory.ts`; an empty panel
-means the local history dataset has no matching record, not that the vehicle never competed. The
-official SCCA results archive remains the authority for a complete decade review.
+matches the selected model family to the official class winners from the nine Solo Nationals held
+from 2016 through 2025; the 2020 event was canceled. The annual reports publish the winning vehicle
+text and tire manufacturer, but not a dependable tire size or exact tire model. The app therefore
+reports observed manufacturer counts and current class tire rules without fabricating size/model
+win ratios. An empty panel means no model-family class win was found in the loaded winner records,
+not that the vehicle never entered or cannot be competitive.
 
 ## Important limitation
 

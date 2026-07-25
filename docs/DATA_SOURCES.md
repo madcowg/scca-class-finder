@@ -1,6 +1,6 @@
 # Data sources and review record
 
-Review date: 2026-07-24
+Review date: 2026-07-25
 
 ## Authority hierarchy
 
@@ -10,7 +10,8 @@ Review date: 2026-07-24
 4. This application's reviewed first-party placements
 5. EPA production identity data, which constrains year/make/model but is not a classification authority
 6. Transport Canada vehicle dimensions served by the official NHTSA vPIC API
-7. The imported SCCA-oriented name archive, which is not a classification authority
+7. Official annual SCCA Solo Nationals result reports, used only as competition-history evidence
+8. The imported SCCA-oriented name archive, which is not a classification authority
 
 Official starting point:
 
@@ -137,6 +138,30 @@ Corrected older audited overrides now intentionally stop short of non-official c
 project. It is limited to historical identity names under the `Older` bucket. Its class arrays are
 never read by the runtime classifier. Current class placement comes from the official versioned
 Appendix A dataset plus the small reviewed first-party correction layer.
+
+## Solo Nationals winner history
+
+`src/data/nationals-winners-2016-2025.json` contains 639 class-winner rows from the official
+combined results for the nine Solo Nationals held during the ten-year 2016-2025 window. The 2020
+event was canceled. Each row retains its event year, class, open/ladies division, published winning
+vehicle text, published tire manufacturer, and direct annual-results URL.
+
+`scripts/import-nationals-results.py` separates the vehicle and tire columns by PDF coordinates.
+The official 2022 and 2024 reports are scanned documents, so their cached local copies require OCR.
+The importer applies only explicit OCR cleanup and known tire-manufacturer normalization. It omits
+rows with no published vehicle and the 2024 Kart Modified Electric exhibition winner rather than
+presenting either as a normal National Championship vehicle result.
+
+The runtime matches these records at model-family level. It does not use a Nationals result to
+classify the current build, and it does not claim that every package or model year in a family is
+equally competitive. The reports publish tire manufacturers, but do not consistently publish tire
+dimensions or exact tire models. Accordingly, the app can show observed manufacturer counts and
+the selected class's legal tire constraints, but cannot support size/model winning-ratio claims
+such as a specific `205/50R15` or `Potenza RE-71RS` percentage.
+
+Official archive:
+
+- https://www.scca.com/pages/solo-archives
 
 ## Required maintenance practice
 

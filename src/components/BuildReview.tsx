@@ -21,7 +21,8 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
             field: group.field,
             title: group.title,
             label: option.label,
-            manualReview: Boolean(option.manualReview)
+            manualReview: Boolean(option.manualReview),
+            principalRelevant: group.principalRelevant !== false
           }
         ]
       : [];
@@ -45,11 +46,11 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
 
       <div className="review-mods">
         <span className="field-title">Mods</span>
-      {changedFields.length === 0 ? (
+      {changedFields.filter((item) => item.principalRelevant).length === 0 ? (
         <p className="review-stock">Stock</p>
       ) : (
         <ul className="review-list">
-          {changedFields.map((item) => (
+          {changedFields.filter((item) => item.principalRelevant).map((item) => (
             <li key={item.field}>
               <strong>{item.title}:</strong> {item.label}
               {item.manualReview && <span className="review-flag">Manual review</span>}
@@ -58,6 +59,19 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
         </ul>
       )}
       </div>
+
+      {changedFields.some((item) => !item.principalRelevant) && (
+        <div className="review-mods">
+          <span className="field-title">Xtreme Street facts</span>
+          <ul className="review-list">
+            {changedFields.filter((item) => !item.principalRelevant).map((item) => (
+              <li key={item.field}>
+                <strong>{item.title}:</strong> {item.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="wizard-actions">
         <button className="secondary-button" type="button" onClick={onBack}>

@@ -18,6 +18,20 @@ const SP_PLUS: PrincipalCategory[] = [
 const SM_PLUS: PrincipalCategory[] = ["streetModified", "prepared", "modified"];
 const P_PLUS: PrincipalCategory[] = ["prepared", "modified"];
 const M_ONLY: PrincipalCategory[] = ["modified"];
+const ST_2WD_LSD_CLASSES = [
+  "sst",
+  "ast",
+  "bst",
+  "cst",
+  "dst",
+  "gst",
+  "sts",
+  "str",
+  "stu",
+  "stx",
+  "sth"
+];
+const ST_AWD_LSD_CLASSES = ["sst", "ast", "bst", "cst", "dst", "stu", "stx", "sth"];
 
 export const RULE_GROUPS: RuleGroup[] = [
   {
@@ -27,15 +41,22 @@ export const RULE_GROUPS: RuleGroup[] = [
     options: [
       {
         value: "street200",
-        label: "200+ UTQG street tire",
-        description: "DOT passenger-car tire meeting the Street-category 200 UTQG floor.",
+        label: "Street tire: DOT, 200+ UTQG, 7/32 in new tread",
+        description: "Street requires a DOT passenger tire with at least 200 UTQG, at least 7/32 in molded tread depth when new, and a current or prior-two-year SCCA Tire Guide listing. In Street Touring, maximum section width is class-dependent: 225, 245, 255, 265, 295, or 315 mm; SST is unlimited.",
         allowedCategories: ALL,
         section: "13.3"
       },
       {
+        value: "vitourP1",
+        label: "Vitour Tempesta P1 / P1+ (Xtreme Street exception)",
+        description: "Section 21 expressly permits the Vitour Tempesta P1 and P1+ in Xtreme Street. They do not satisfy this app's normal Street or Street Touring tire path unless the tire independently meets Section 13.3.",
+        allowedCategories: SP_PLUS,
+        section: "21.4"
+      },
+      {
         value: "dotBelow200",
-        label: "DOT tire below 200 UTQG / R-comp",
-        description: "Not Street or Street Touring legal; evaluate in Street Prepared or a higher category.",
+        label: "Other DOT tire below 200 UTQG / R-comp",
+        description: "A tire below 200 UTQG is not legal in Street or Street Touring. Other than the named Vitour Xtreme Street exception, evaluate it in Street Prepared or a category whose tire rules permit it.",
         allowedCategories: SP_PLUS,
         section: "13.3 / 14.3 / 15.3"
       },
@@ -70,8 +91,8 @@ export const RULE_GROUPS: RuleGroup[] = [
       },
       {
         value: "streetTouringLegal",
-        label: "Wider wheel within Street Touring limits",
-        description: "Outside Street, but intended to remain within the applicable Street Touring width limits.",
+        label: "Wider wheel no wider than my ST class permits",
+        description: "Street Touring maximum wheel widths are 7.5 in for AST/CST AWD and EST; 8 in for DST AWD; 9 in for AST/CST 2WD, DST, and GST; 11 in for BST; SST is unlimited.",
         allowedCategories: ST_PLUS,
         section: "14.4"
       },
@@ -222,15 +243,15 @@ export const RULE_GROUPS: RuleGroup[] = [
       },
       {
         value: "streetTouringHardware",
-        label: "Camber bolts, plates, or category-legal adjustment hardware",
-        description: "Requires Street Touring or a higher category and must stay within detailed component limits.",
+        label: "ST hardware at factory mounting points; no pickup-point relocation",
+        description: "Street Touring permits camber plates or bolts at original mounts, bushings in the original location without changing bushing type, and limited replacement arms: one upper or lower arm, not both; one lateral link per corner on multi-link cars. Every replacement arm must use the original mounting points.",
         allowedCategories: ST_PLUS,
         section: "14.8.B / 14.8.C / 14.8.F / 14.8.H"
       },
       {
         value: "changedArms",
-        label: "Changed control arms / bushings beyond ST allowance",
-        description: "Requires Street Prepared or a higher category.",
+        label: "More than one ST-allowed arm/link, or non-ST bushings",
+        description: "Multiple arm changes at one corner, changing bushing type, or hardware beyond the Section 14.8 limits is not Street Touring legal; evaluate Street Prepared or higher.",
         allowedCategories: SP_PLUS,
         section: "15.8.C / 15.8.F-H / 15.8.N"
       },
@@ -251,22 +272,22 @@ export const RULE_GROUPS: RuleGroup[] = [
     options: [
       {
         value: "standardOrFilter",
-        label: "Standard intake or replacement filter element",
-        description: "Within the conservative Street intake profile.",
+        label: "Factory intake, or replacement filter in the factory airbox",
+        description: "Street permits a replacement air-filter element but does not permit replacing or rerouting the intake system.",
         allowedCategories: ALL,
         section: "13.10"
       },
       {
         value: "toThrottleBody",
-        label: "Cold-air intake to throttle body / turbo inlet",
-        description: "Typical Street Touring intake scope; exact sensors and emissions equipment still matter.",
+        label: "Intake changed only before the throttle body / carb / turbo inlet",
+        description: "Street Touring permits intake changes only up to, but not including, the first throttle body, carburetor, compressor inlet, or intake manifold. Do not modify body structure, remove or replace engine-management sensors, or defeat PCV function.",
         allowedCategories: ST_PLUS,
         section: "14.10"
       },
       {
         value: "customBeyond",
-        label: "Custom manifold / throttle-body or induction changes beyond ST",
-        description: "Requires Street Prepared or a higher category.",
+        label: "Throttle body, intake manifold, sensors, or structure changed",
+        description: "Changing the throttle body or manifold, altering required sensors/PCV, or cutting body structure exceeds the Street Touring intake allowance; evaluate Street Prepared or higher.",
         allowedCategories: SP_PLUS,
         section: "15.10"
       },
@@ -287,22 +308,22 @@ export const RULE_GROUPS: RuleGroup[] = [
     options: [
       {
         value: "standardOrCatBack",
-        label: "Standard or cat-back / axle-back",
-        description: "Fits the conservative Street exhaust profile when catalysts remain compliant.",
+        label: "Factory exhaust, or cat-back after the final factory catalyst",
+        description: "Street permits exhaust changes only downstream of the final catalytic converter while required emissions equipment remains functional.",
         allowedCategories: ALL,
         section: "13.10.C"
       },
       {
         value: "headersHighFlowCat",
-        label: "Headers and category-legal high-flow catalyst",
-        description: "Requires Street Touring or a higher category and detailed catalyst-location review.",
+        label: "Headers/downpipe with a 100+ cell catalyst no more than 6 in downstream",
+        description: "Street Touring permits headers and downpipes when the replacement catalyst has at least 100 cells per inch and a 3 in substrate, and its inlet is no more than 6 in downstream of the original final catalyst outlet.",
         allowedCategories: ST_PLUS,
         section: "14.10.D / 14.10.E"
       },
       {
         value: "emissionsRemoved",
-        label: "Catalyst or emissions equipment removed / relocated beyond ST",
-        description: "Requires Street Prepared or a higher category, subject to local law and category wording.",
+        label: "Catalyst removed, too far downstream, or other emissions equipment defeated",
+        description: "Removing the catalyst, moving it beyond the Street Touring 6 in limit, or defeating emissions equipment is not Street Touring legal. Evaluate Street Prepared or higher, while still complying with applicable law.",
         allowedCategories: SP_PLUS,
         section: "15.10.F / 15.10.I"
       },
@@ -330,15 +351,29 @@ export const RULE_GROUPS: RuleGroup[] = [
       },
       {
         value: "reflash",
-        label: "ECU reflash within Street Touring constraints",
-        description: "Requires Street Touring or higher; the tune must still comply with the exact category restrictions.",
+        label: "Reflash of the factory ECU; factory sensors and OBD-II retained",
+        description: "Street Touring permits reprogramming the standard ECU. The factory OBD-II port must remain functional and only factory-type engine-management sensors may be used.",
         allowedCategories: ST_PLUS,
         section: "14.10.F.1.a"
       },
       {
+        value: "legacyPiggyback",
+        label: "2005-or-older plug-in piggyback; no cut or spliced harness",
+        description: "For 2005-and-older vehicles, Street Touring permits a plug-compatible piggyback only when the factory harness is not cut or spliced and all other ECU restrictions are met.",
+        allowedCategories: ST_PLUS,
+        section: "14.10.F.1.b"
+      },
+      {
+        value: "legacyStandalone",
+        label: "1995-or-older standalone ECU using the factory harness",
+        description: "For 1995-and-older vehicles, Street Touring permits a standalone ECU under the legacy allowance when installation and sensor rules are met.",
+        allowedCategories: ST_PLUS,
+        section: "14.10.F.1.c"
+      },
+      {
         value: "standalone",
-        label: "Standalone / piggyback beyond ST constraints",
-        description: "Requires Street Prepared or a higher category.",
+        label: "Modern standalone ECU, cut/spliced harness, or non-factory sensors",
+        description: "A modern standalone, cut or spliced engine harness, or non-factory engine-management sensors exceeds Street Touring; evaluate Street Prepared or higher.",
         allowedCategories: SP_PLUS,
         section: "15.1.D / 15.10"
       },
@@ -402,10 +437,19 @@ export const RULE_GROUPS: RuleGroup[] = [
       },
       {
         value: "streetTouringLsd",
-        label: "Limited-slip differential change within ST rules",
-        description: "Requires Street Touring or higher and is subject to drivetrain layout restrictions.",
+        label: "2WD mechanical limited-slip differential; not E Street Touring",
+        description: "For a two-wheel-drive car, SST, AST, BST, CST, DST, and GST may use a mechanical limited-slip differential. EST permits no LSD change except a standard viscous unit.",
         allowedCategories: ST_PLUS,
-        section: "14.10.G / 14.10.H"
+        section: "14.10.G / 14.10.H",
+        classConstraints: { streetTouring: ST_2WD_LSD_CLASSES }
+      },
+      {
+        value: "streetTouringAwdLsd",
+        label: "AWD: one mechanical front, rear, or center LSD; not EST/GST",
+        description: "For AWD cars in SST, AST, BST, CST, or DST, one front, rear, or center differential may be replaced with a mechanical LSD. EST and GST do not receive this AWD allowance.",
+        allowedCategories: ST_PLUS,
+        section: "14.10.G",
+        classConstraints: { streetTouring: ST_AWD_LSD_CLASSES }
       },
       {
         value: "gearOrDrivetrainChange",
@@ -431,22 +475,22 @@ export const RULE_GROUPS: RuleGroup[] = [
     options: [
       {
         value: "streetLegal",
-        label: "Standard hardware; pads, lines, and fluid only",
-        description: "Within the conservative Street brake profile.",
+        label: "Factory calipers/rotors; pads, fluid, and compliant lines only",
+        description: "Street keeps the standard calipers and rotors while allowing pad, fluid, and compliant brake-line changes.",
         allowedCategories: ALL,
         section: "13.6"
       },
       {
         value: "streetTouringKit",
-        label: "Brake changes within Street Touring allowances",
-        description: "Requires Street Touring or higher and exact dimensional/component review.",
+        label: "ST brake kit: equal/larger ferrous rotors, standard mounts, parking brake works",
+        description: "Street Touring replacement rotors must be ferrous and at least the factory diameter and thickness; slots/holes may remove no more than 10% of swept area. Calipers must bolt to standard locations with at least the factory piston count, and the factory-type parking brake must work.",
         allowedCategories: ST_PLUS,
         section: "14.6"
       },
       {
         value: "custom",
-        label: "Custom brake system or mounting changes beyond ST",
-        description: "Requires Street Prepared or higher.",
+        label: "Smaller/thinner or non-ferrous rotors, relocated mounts, or parking brake removed",
+        description: "A brake setup outside the Street Touring rotor, caliper-mount, piston-count, or parking-brake limits requires Street Prepared or higher.",
         allowedCategories: SP_PLUS,
         section: "15.6"
       },
@@ -481,15 +525,15 @@ export const RULE_GROUPS: RuleGroup[] = [
       },
       {
         value: "wingSplitter",
-        label: "Wing, large splitter, diffuser, or broad aero package",
-        description: "Requires Street Modified or higher, subject to dimensional rules.",
+        label: "Wing/splitter/diffuser within Section 21 Xtreme Street dimensions",
+        description: "For Xtreme Street: a front device may project up to 6 in and not pass the front-axle centerline; a diffuser may start no farther forward than the rear-wheel centerline and project up to 6 in; a wing has an 8 sq ft maximum, two elements, vehicle-width limit, and position/height limits in Section 21.",
         allowedCategories: SM_PLUS,
         section: "16.1.K / 16.1.L"
       },
       {
         value: "activeOrExtreme",
-        label: "Active / extreme aero or body-integrated downforce system",
-        description: "Requires detailed Modified-category review.",
+        label: "Aero outside Section 21 dimensions, or active aero not locked",
+        description: "Aero beyond the Section 21 size/location limits, or an adjustable wing that is not locked in one position while moving, cannot be auto-classed as XA/XB and needs Modified-category review.",
         allowedCategories: M_ONLY,
         section: "18",
         manualReview: true
@@ -592,6 +636,221 @@ export const RULE_GROUPS: RuleGroup[] = [
     ]
   },
   {
+    field: "xtremeVehicleType",
+    title: "Xtreme Street vehicle eligibility",
+    help: "XA and XB exclude CAM-eligible cars and kit/component cars.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure whether the car passes the XA/XB vehicle exclusions",
+        description: "Choose a more specific answer before relying on an XA or XB result.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      },
+      {
+        value: "production",
+        label: "Production road car with factory VIN; not CAM-eligible or a kit car",
+        description: "This answers the XA/XB production-car gate only. The car must still pass Section 3.1, retain recognizable original shape, and meet all other Section 21 requirements.",
+        allowedCategories: ALL,
+        section: "21 / Appendix A - Xtreme Street"
+      },
+      {
+        value: "camEligible",
+        label: "CAM-eligible: qualifying North American front-engine RWD car",
+        description: "Any CAM-eligible vehicle is expressly excluded from XA and XB; use the applicable CAM class instead.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street / CAM"
+      },
+      {
+        value: "kitOrComponent",
+        label: "Kit/component car intended for owner completion",
+        description: "Kit and component cars from low-volume manufacturers that are intended for end-user completion are excluded from XA and XB.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      }
+    ]
+  },
+  {
+    field: "drivetrainLayout",
+    title: "Driven wheels for Xtreme Street",
+    help: "XA/XB weight limits depend on FWD, RWD, or AWD, and drivetrain-type conversions are prohibited.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure which drivetrain rule applies",
+        description: "The app cannot choose XA or XB without the driven-wheel layout.",
+        allowedCategories: ALL,
+        section: "21.9 / Appendix A - Xtreme Street"
+      },
+      {
+        value: "fwd",
+        label: "Front-wheel drive (factory drivetrain type)",
+        description: "Minimum weight with driver: 2,680 lb for XA or 2,180 lb for XB.",
+        allowedCategories: ALL,
+        section: "21.9 / Appendix A - Xtreme Street"
+      },
+      {
+        value: "rwd",
+        label: "Rear-wheel drive (factory drivetrain type)",
+        description: "Minimum weight with driver: 2,930 lb for XA or 2,330 lb for XB.",
+        allowedCategories: ALL,
+        section: "21.9 / Appendix A - Xtreme Street"
+      },
+      {
+        value: "awd",
+        label: "All-wheel drive (factory drivetrain type)",
+        description: "Minimum weight with driver: 3,180 lb for XA or 2,480 lb for XB.",
+        allowedCategories: ALL,
+        section: "21.9 / Appendix A - Xtreme Street"
+      },
+      {
+        value: "converted",
+        label: "Converted to a different drivetrain type",
+        description: "Section 21 permits drivetrain changes but prohibits converting the vehicle's drivetrain type, such as FWD to AWD.",
+        allowedCategories: ALL,
+        section: "21.9"
+      }
+    ]
+  },
+  {
+    field: "competitionWeight",
+    title: "Competition weight with driver",
+    help: "Use the car's measured event weight including the driver, not published curb weight.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not weighed with the driver",
+        description: "XA/XB cannot be confirmed from curb weight because the rule uses competition weight with the driver.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      },
+      {
+        value: "under2180",
+        label: "Under 2,180 lb with driver",
+        description: "Below every XA and XB minimum weight.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      },
+      {
+        value: "2180to2329",
+        label: "2,180-2,329 lb with driver",
+        description: "Meets XB minimum weight only for FWD.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      },
+      {
+        value: "2330to2479",
+        label: "2,330-2,479 lb with driver",
+        description: "Meets XB minimum weight for FWD and RWD, but not AWD.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      },
+      {
+        value: "2480to2679",
+        label: "2,480-2,679 lb with driver",
+        description: "Meets XB minimum weight for FWD, RWD, and AWD.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      },
+      {
+        value: "2680to2929",
+        label: "2,680-2,929 lb with driver",
+        description: "Meets XA minimum weight for FWD and XB minimum weight for every drivetrain.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      },
+      {
+        value: "2930to3179",
+        label: "2,930-3,179 lb with driver",
+        description: "Meets XA minimum weight for FWD/RWD and XB minimum weight for every drivetrain.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      },
+      {
+        value: "3180plus",
+        label: "3,180 lb or more with driver",
+        description: "Meets XA and XB minimum weight for FWD, RWD, and AWD.",
+        allowedCategories: ALL,
+        section: "Appendix A - Xtreme Street"
+      }
+    ]
+  },
+  {
+    field: "xtremePowertrain",
+    title: "Xtreme Street powertrain type",
+    help: "Electric and hybrid cars have a stricter tractive-system rule than combustion cars.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure which powertrain rule applies",
+        description: "Choose the vehicle's original powertrain type before relying on XA/XB.",
+        allowedCategories: ALL,
+        section: "21.9"
+      },
+      {
+        value: "ice",
+        label: "Factory-type internal-combustion powertrain",
+        description: "Section 21 leaves internal and external engine and drivetrain components unrestricted, but does not permit converting to another powertrain type.",
+        allowedCategories: ALL,
+        section: "21.9"
+      },
+      {
+        value: "electrifiedFactory",
+        label: "Hybrid/EV with factory motors, battery, controllers, sensors, and programming",
+        description: "Hybrid and EV tractive systems and programming must remain original, including motors, batteries, controllers, computers, and sensors.",
+        allowedCategories: ALL,
+        section: "21.9"
+      },
+      {
+        value: "electrifiedModified",
+        label: "Hybrid/EV motor, battery, controller, sensor, or tractive programming changed",
+        description: "Any listed tractive-system or programming change is prohibited in XA/XB.",
+        allowedCategories: ALL,
+        section: "21.9"
+      },
+      {
+        value: "converted",
+        label: "Converted between combustion, hybrid, or electric power",
+        description: "Converting the vehicle from one powertrain type to another is prohibited in XA/XB.",
+        allowedCategories: ALL,
+        section: "21.9"
+      }
+    ]
+  },
+  {
+    field: "roadEquipment",
+    title: "Required road equipment",
+    help: "Section 21 keeps the road-going equipment that makes Xtreme Street a street-car category.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "complete",
+        label: "Headlights, brake lights, signals, horn, and factory-equipped wipers work",
+        description: "This satisfies the modeled Section 21 road-equipment check; safety, sound, and all other rules still apply.",
+        allowedCategories: ALL,
+        section: "21.2"
+      },
+      {
+        value: "missing",
+        label: "One or more required lights, signals, horn, or wipers is missing or inoperative",
+        description: "The car is not XA/XB legal until the required road equipment is restored and functional.",
+        allowedCategories: ALL,
+        section: "21.2"
+      },
+      {
+        value: "unknown",
+        label: "Not sure whether all required road equipment works",
+        description: "Confirm the listed equipment before relying on an XA/XB result.",
+        allowedCategories: ALL,
+        section: "21.2"
+      }
+    ]
+  },
+  {
     field: "other",
     title: "Other modifications",
     help: "Use this catch-all so an unrepresented performance change cannot be silently ignored.",
@@ -633,7 +892,12 @@ export const DEFAULT_BUILD: BuildProfile = {
   safety: "streetLegal",
   interior: "full",
   body: "standard",
-  other: "none"
+  other: "none",
+  xtremeVehicleType: "unknown",
+  drivetrainLayout: "unknown",
+  xtremePowertrain: "unknown",
+  competitionWeight: "unknown",
+  roadEquipment: "complete"
 };
 
 export function findRuleOption(field: keyof BuildProfile, value: string) {

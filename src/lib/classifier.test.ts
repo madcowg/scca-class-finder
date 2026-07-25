@@ -698,4 +698,91 @@ describe("classifyVehicle", () => {
     expect(result.selectedCategory).toBe("streetPrepared");
     expect(result.messages.join(" ")).toContain("build is legal in street");
   });
+
+  it("uses the exact EST differential restriction before moving to Street Prepared", () => {
+    const result = classifyVehicleWithMapping(
+      miata,
+      { ...DEFAULT_BUILD, differential: "streetTouringLsd" },
+      {
+        ...reviewedMiataMapping,
+        classes: ["est", "csp"]
+      }
+    );
+
+    expect(result.evaluations.find((item) => item.category === "streetTouring")?.status)
+      .toBe("blocked");
+    expect(result.selectedCategory).toBe("streetPrepared");
+    expect(result.selectedClass).toBe("csp");
+  });
+
+  it("selects XB when a highly modified production car passes the separate XB checks", () => {
+    const result = classifyVehicleWithMapping(
+      miata,
+      {
+        ...DEFAULT_BUILD,
+        engine: "extreme",
+        xtremeVehicleType: "production",
+        drivetrainLayout: "rwd",
+        xtremePowertrain: "ice",
+        competitionWeight: "2330to2479"
+      },
+      reviewedMiataMapping
+    );
+
+    expect(result.selectedCategory).toBeNull();
+    expect(result.selectedClass).toBe("xb");
+    expect(result.xtremeStreet.status).toBe("eligible");
+    expect(result.xtremeStreet.eligibleClasses).toEqual(["xb"]);
+  });
+
+  it("reports both XA and XB objective eligibility while recommending the closer weight floor", () => {
+    const result = classifyVehicleWithMapping(
+      miata,
+      {
+        ...DEFAULT_BUILD,
+        engine: "extreme",
+        xtremeVehicleType: "production",
+        drivetrainLayout: "rwd",
+        xtremePowertrain: "ice",
+        competitionWeight: "2930to3179"
+      },
+      reviewedMiataMapping
+    );
+
+    expect(result.selectedClass).toBe("xa");
+    expect(result.xtremeStreet.eligibleClasses).toEqual(["xa", "xb"]);
+    expect(result.xtremeStreet.recommendedClass).toBe("xa");
+  });
+
+  it("blocks XA/XB for an underweight car, a CAM car, or an EV tractive-system change", () => {
+    const base = {
+      ...DEFAULT_BUILD,
+      engine: "extreme",
+      xtremeVehicleType: "production",
+      drivetrainLayout: "rwd",
+      xtremePowertrain: "ice",
+      competitionWeight: "under2180"
+    };
+    expect(
+      classifyVehicleWithMapping(miata, base, reviewedMiataMapping).xtremeStreet.status
+    ).toBe("blocked");
+    expect(
+      classifyVehicleWithMapping(
+        miata,
+        { ...base, competitionWeight: "2930to3179", xtremeVehicleType: "camEligible" },
+        reviewedMiataMapping
+      ).xtremeStreet.status
+    ).toBe("blocked");
+    expect(
+      classifyVehicleWithMapping(
+        miata,
+        {
+          ...base,
+          competitionWeight: "2930to3179",
+          xtremePowertrain: "electrifiedModified"
+        },
+        reviewedMiataMapping
+      ).xtremeStreet.status
+    ).toBe("blocked");
+  });
 });

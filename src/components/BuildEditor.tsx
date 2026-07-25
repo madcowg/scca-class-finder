@@ -32,6 +32,18 @@ const BUILD_SECTIONS: Array<{
     description: "Exterior, interior, safety equipment, and anything outside the common paths.",
     tip: "These changes affect stability, safety, balance, and how much weight the car carries.",
     fields: ["aero", "safety", "interior", "body", "other"]
+  },
+  {
+    title: "Xtreme Street eligibility",
+    description: "Required only when you want XA/XB considered for a highly modified street car.",
+    tip: "XA and XB use separate production-car, road-equipment, tire, drivetrain, and minimum-weight rules rather than the normal preparation ladder.",
+    fields: [
+      "xtremeVehicleType",
+      "drivetrainLayout",
+      "xtremePowertrain",
+      "competitionWeight",
+      "roadEquipment"
+    ]
   }
 ];
 

@@ -28,6 +28,28 @@ The result also exposes the **minimum legal category** from the modification set
 
 Supplemental categories such as CAM, Xtreme Street, EVX, Solo Spec Coupe, and Club Spec are presented separately because each has its own eligibility and preparation path.
 
+### Xtreme Street
+
+XA/XB does not participate in the principal least-prepared category order. After the principal
+Street-through-Modified evaluation, the engine independently checks the Section 21 facts represented
+by the interface:
+
+- factory-VIN production-road-car eligibility and the CAM/kit-car exclusions;
+- working required road equipment;
+- Street-eligible tires or the named Vitour Tempesta P1/P1+ exception;
+- retention of the original driven-wheel and powertrain types;
+- original tractive-system hardware and programming for hybrid/electric vehicles; and
+- measured competition weight with the driver against the XA/XB driven-wheel minimums.
+
+Confirmed failures block XA/XB. Missing facts produce manual review. XA/XB can become the result
+only when no principal category is complete and every modeled Section 21 check passes. If both
+weight-based descriptions are objectively available, the interface reports both and recommends the
+class whose minimum is closest to the entered weight band; it does not describe XA and XB as
+preparation steps.
+
+ALSCCA PRO is handled only after the car has a class. It is a driver-selected PAX competition group,
+not another vehicle-preparation category, so the displayed registration is `PRO / SS`, not `XSS`.
+
 ## Conservative behavior
 
 A classing tool should fail safely. The engine returns **manual review required** when:
@@ -47,6 +69,7 @@ A classing tool should fail safely. The engine returns **manual review required*
 - `vehicles.generated.json`: historical SCCA-oriented name archive imported from the MIT-licensed project. It is limited to the `Older` bucket and cannot provide a runtime class. Its class arrays are not used by the runtime classifier.
 - `reviewed-vehicles2026.json` and `overrides2026.ts`: a small correction and supplemental layer for exact package aliases and separately reviewed classes. It intentionally does not copy previous-year or third-party mappings forward.
 - `rules.ts`: explicit category allowances for the user-facing modification profiles.
+- `nationals-winners-2016-2025.json`: official class-winner evidence from the nine Nationals held in the ten-year 2016-2025 window.
 
 ## Current source-handling rules
 
@@ -63,8 +86,9 @@ A classing tool should fail safely. The engine returns **manual review required*
 5. Update exact-year aliases only in the reviewed first-party data; never promote imported archive class arrays into runtime decisions.
 6. Update current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
 7. Run `npx vite-node scripts/audit-rulebook-coverage.ts` and investigate every reachability regression.
-8. Add regression tests for every corrected vehicle or allowance.
-9. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
+8. Regenerate the Nationals winner dataset from the official annual PDFs when the ten-year window changes, and review importer exceptions.
+9. Add regression tests for every corrected vehicle or allowance.
+10. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
 
 The repository also runs ten exact, stock 2026 Appendix A cases from different makes through `npx vite-node scripts/verify-current-cases.ts`.
 
