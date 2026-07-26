@@ -61,7 +61,8 @@ Vite uses `base: "./"`, so the build works from a repository subpath.
 - `src/data/vehicles.production.json` - Section 3.1-filtered EPA production-year hierarchy used by the selector
 - `src/data/vehicles.eligibility.json` - generated stability audit with official dimensions and current-rule exceptions
 - `src/data/vehicles.generated.json` - historical SCCA-oriented name archive used only by the `Older` bucket; its class arrays are never used by the runtime classifier
-- `src/data/nationals-winners-2016-2025.json` - official Solo Nationals class winners for the latest ten-year window
+- `src/data/nationals-winners-2021-2025.json` - official Solo Nationals class winners for the latest five completed events
+- `src/data/vehicle-generations.ts` - reviewed generation ranges used to prevent cross-generation history matches
 - `src/components/` - redesigned responsive interface
 - `src/lib/classifier.test.ts` - regression tests
 - `scripts/extract-rulebook-vehicles.py` - reproducible two-column Appendix A extractor with layout-damage validation
@@ -110,12 +111,14 @@ powertrain type, and competition weight with the driver. A missing fact is never
 copied from a prior year or third-party tool.
 
 National competition history is intentionally conservative and source-backed. The result view
-matches the selected model family to the official class winners from the nine Solo Nationals held
-from 2016 through 2025; the 2020 event was canceled. The annual reports publish the winning vehicle
-text and tire manufacturer, but not a dependable tire size or exact tire model. The app therefore
-reports observed manufacturer counts and current class tire rules without fabricating size/model
-win ratios. An empty panel means no model-family class win was found in the loaded winner records,
-not that the vehicle never entered or cannot be competitive.
+matches the selected vehicle to official class winners from the five completed Solo Nationals held
+from 2021 through 2025. A winner must have a published vehicle year inside the selected car's
+reviewed generation range. If that range has not been reviewed, the app matches only the exact
+model year rather than mixing generations. The annual reports publish the winning vehicle text and
+tire manufacturer, but not a dependable tire size or exact tire model. The app therefore reports
+observed manufacturer counts and current class tire rules without fabricating size/model win ratios.
+An empty panel means no matching class win was found in the loaded records, not that the vehicle
+never entered or cannot be competitive.
 
 ## Important limitation
 

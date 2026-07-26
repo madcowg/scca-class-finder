@@ -1,9 +1,9 @@
-import nationalsData from "../data/nationals-winners-2016-2025.json";
+import nationalsData from "../data/nationals-winners-2021-2025.json";
+import { VEHICLE_GENERATIONS } from "../data/vehicle-generations";
 import type { NationalCompetitionRecord, VehicleSelection } from "./types";
 
 export const NATIONAL_ARCHIVE_URL = "https://www.scca.com/pages/solo-archives";
 export const NATIONAL_EVENT_YEARS = nationalsData.eventYears;
-export const NATIONAL_CANCELLED_YEARS = nationalsData.cancelledYears;
 export const NATIONAL_DATA_POLICY = nationalsData.policy;
 
 interface ImportedWinner {
@@ -21,6 +21,14 @@ export interface TireBrandSummary {
   manufacturer: string;
   wins: number;
   share: number;
+}
+
+export interface NationalHistoryScope {
+  label: string;
+  startYear: number;
+  endYear: number;
+  generationVerified: boolean;
+  sourceUrl: string | null;
 }
 
 const RECORDS = nationalsData.records as ImportedWinner[];
@@ -69,6 +77,49 @@ function compact(value: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function generationKey(make: string, model: string): string {
+  return `${compact(make)}:${compact(model)}`;
+}
+
+export function getNationalHistoryScope(
+  selection: VehicleSelection
+): NationalHistoryScope | null {
+  const selectedYear = Number(selection.year);
+  if (
+    selection.notListed ||
+    !selection.make ||
+    !selection.model ||
+    !Number.isInteger(selectedYear)
+  ) {
+    return null;
+  }
+
+  const generation = VEHICLE_GENERATIONS[
+    generationKey(selection.make, selection.model)
+  ]?.find(
+    (candidate) =>
+      selectedYear >= candidate.startYear && selectedYear <= candidate.endYear
+  );
+
+  if (generation) {
+    return {
+      label: `${generation.label} (${generation.startYear}-${generation.endYear})`,
+      startYear: generation.startYear,
+      endYear: generation.endYear,
+      generationVerified: true,
+      sourceUrl: generation.sourceUrl
+    };
+  }
+
+  return {
+    label: `${selectedYear} model year only`,
+    startYear: selectedYear,
+    endYear: selectedYear,
+    generationVerified: false,
+    sourceUrl: null
+  };
+}
+
 function tokens(value: string): string[] {
   return value
     .toLowerCase()
@@ -102,10 +153,14 @@ function modelMatches(model: string, vehicle: string): boolean {
 export function getNationalCompetitionHistory(
   selection: VehicleSelection
 ): NationalCompetitionRecord[] {
-  if (selection.notListed || !selection.make || !selection.model) return [];
+  const scope = getNationalHistoryScope(selection);
+  if (!scope) return [];
 
   return RECORDS.filter(
     (record) =>
+      record.vehicleYear !== null &&
+      record.vehicleYear >= scope.startYear &&
+      record.vehicleYear <= scope.endYear &&
       makeMatches(selection.make, record.vehicle) &&
       modelMatches(selection.model, record.vehicle)
   )

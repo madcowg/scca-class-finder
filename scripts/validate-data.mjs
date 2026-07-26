@@ -166,9 +166,9 @@ if (unknownLegacyClasses.size) {
   throw new Error(`Unknown legacy class IDs: ${[...unknownLegacyClasses].sort().join(", ")}`);
 }
 
-const nationalsPath = new URL("../src/data/nationals-winners-2016-2025.json", import.meta.url);
+const nationalsPath = new URL("../src/data/nationals-winners-2021-2025.json", import.meta.url);
 const nationals = JSON.parse(await readFile(nationalsPath, "utf8"));
-const expectedNationalsYears = [2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025];
+const expectedNationalsYears = [2021, 2022, 2023, 2024, 2025];
 const knownTireManufacturers = new Set([
   "Avon", "BFGoodrich", "Bridgestone", "Continental", "Dunlop", "Falken",
   "Goodyear", "Hoosier", "Kumho", "Michelin", "Multi", "Nankang", "Nexen",
@@ -178,13 +178,13 @@ const nationalsKeys = new Set();
 
 if (
   JSON.stringify(nationals.eventYears) !== JSON.stringify(expectedNationalsYears) ||
-  JSON.stringify(nationals.cancelledYears) !== JSON.stringify([2020]) ||
+  "cancelledYears" in nationals ||
   nationals.sourceArchive !== "https://www.scca.com/pages/solo-archives" ||
   !nationals.policy?.includes("tire size and model are not present") ||
   !Array.isArray(nationals.records) ||
-  nationals.records.length < 630
+  nationals.records.length < 345
 ) {
-  throw new Error("Ten-year Solo Nationals winner dataset metadata or coverage is incomplete");
+  throw new Error("Five-year Solo Nationals winner dataset metadata or coverage is incomplete");
 }
 
 for (const record of nationals.records) {
@@ -211,7 +211,7 @@ for (const record of nationals.records) {
 }
 
 const nationalsLandmarks = [
-  [2016, "cs", "Mazda"],
+  [2021, "cs", "Mazda"],
   [2022, "ss", "Porsche"],
   [2024, "cs", "Mazda"],
   [2025, "xb", "Mazda"]
@@ -309,6 +309,6 @@ if (
 console.log(`Validated reviewed catalog: ${new Set(reviewed.map((entry) => entry.make)).size} makes, ${reviewedFamilies.size} model families, ${reviewed.length} exact year variants.`);
 console.log(`Validated official 2026 Appendix A: ${appendix.listings.length} Street, Street Touring, and Street Prepared listings across ${appendixCounts.size} classes.`);
 console.log(`Validated legacy source archive: ${legacyMakes} makes, ${legacyModels} model descriptions, ${legacyPlacements} year placements.`);
-console.log(`Validated ten-year Solo Nationals winners: ${nationals.records.length} class winners across ${nationals.eventYears.length} held events; 2020 canceled.`);
+console.log(`Validated five-year Solo Nationals winners: ${nationals.records.length} class winners across ${nationals.eventYears.length} held events.`);
 console.log(`Validated eligibility-filtered EPA hierarchy: ${productionMakes} year/make groups, ${productionModels} model families, ${productionVariants} year-specific variants.`);
 console.log(`Validated SCCA 3.1 eligibility audit: ${eligibility.decisions.length} model families reviewed.`);

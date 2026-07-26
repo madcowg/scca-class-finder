@@ -1,4 +1,4 @@
-"""Import Solo Nationals class winners from official SCCA result PDFs.
+"""Import five years of Solo Nationals class winners from official SCCA result PDFs.
 
 The Pronto reports use a stable table layout. Parsing word coordinates keeps
 the car and tire columns separate even when ordinary PDF text extraction
@@ -17,7 +17,7 @@ import pdfplumber
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT_DIR = ROOT / "tmp" / "nationals"
-OUTPUT = ROOT / "src" / "data" / "nationals-winners-2016-2025.json"
+OUTPUT = ROOT / "src" / "data" / "nationals-winners-2021-2025.json"
 OCR_DEPENDENCIES = ROOT / "tmp" / "ocr"
 OCR_YEARS = {2022, 2024}
 TIRE_MANUFACTURERS = [
@@ -47,10 +47,6 @@ SOURCES = {
     2023: "https://www.scca.com/downloads/69295-combined-official-class-results-w-protests/download",
     2022: "https://www.scca.com/downloads/64048-official-class-results-w-protest/download",
     2021: "https://www.scca.com/downloads/63415-2021-solo-nats-results-w-protest/download",
-    2019: "https://www.scca.com/downloads/47295-2019-tire-rack-solo-nationals-official-class-result/download",
-    2018: "https://www.scca.com/downloads/42353-2018-solo-nationals-official-class-results-combined/download",
-    2017: "https://cdn.connectsites.net/user_files/scca/downloads/000/037/986/2017_Tire_Rack_SCCA_Solo_Nationals_Results.pdf",
-    2016: "https://cdn.connectsites.net/user_files/scca/downloads/000/018/284/Nationals_10.14.pdf",
 }
 
 CLASS_IDS = {
@@ -412,7 +408,6 @@ def main() -> None:
     )
     payload = {
         "eventYears": sorted(years),
-        "cancelledYears": [2020],
         "sourceArchive": "https://www.scca.com/pages/solo-archives",
         "policy": (
             "Official class winners only. Vehicle text and tire manufacturer are "

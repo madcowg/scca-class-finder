@@ -9,9 +9,9 @@ import {
 import type { ClassificationResult, VehicleSelection } from "../lib/types";
 import {
   getNationalCompetitionHistory,
+  getNationalHistoryScope,
   legalTireGuidance,
   NATIONAL_ARCHIVE_URL,
-  NATIONAL_CANCELLED_YEARS,
   NATIONAL_EVENT_YEARS,
   summarizeTireBrands
 } from "../lib/nationalHistory";
@@ -144,6 +144,7 @@ export function ResultPanel({ selection, result }: Props) {
   const [proRequested, setProRequested] = useState(false);
   const vehicleName = vehicleSelectionLabel(selection);
   const nationalHistory = getNationalCompetitionHistory(selection);
+  const nationalHistoryScope = getNationalHistoryScope(selection);
   const tireBrands = summarizeTireBrands(nationalHistory);
   const historyByClass = [...nationalHistory.reduce((groups, record) => {
     const records = groups.get(record.classId) ?? [];
@@ -259,16 +260,31 @@ export function ResultPanel({ selection, result }: Props) {
       <div className="panel national-history-panel">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Ten-year official evidence</p>
+            <p className="eyebrow">Five-year official evidence</p>
             <h3>How competitive is my car in Nationals?</h3>
           </div>
         </div>
         <p className="category-path-note">
-          This model-family view uses official Solo Nationals class winners from{" "}
-          {NATIONAL_EVENT_YEARS[0]}-{NATIONAL_EVENT_YEARS.at(-1)}.{" "}
-          {NATIONAL_CANCELLED_YEARS.join(", ")} was canceled. A winning related model does not
-          prove that every year, package, or build is equally competitive.
+          This view uses official Solo Nationals class winners from {NATIONAL_EVENT_YEARS[0]}-
+          {NATIONAL_EVENT_YEARS.at(-1)} and only includes records whose published vehicle year
+          fits the selected history scope.
         </p>
+        {nationalHistoryScope && (
+          <p className="generation-scope">
+            <strong>Compared vehicle scope:</strong>{" "}
+            {nationalHistoryScope.sourceUrl ? (
+              <a href={nationalHistoryScope.sourceUrl} target="_blank" rel="noreferrer">
+                {nationalHistoryScope.label}
+              </a>
+            ) : (
+              nationalHistoryScope.label
+            )}
+            .{" "}
+            {nationalHistoryScope.generationVerified
+              ? "Winner records from other generations are excluded."
+              : "A reviewed generation range is not loaded for this model, so the app uses the exact model year rather than risk mixing generations."}
+          </p>
+        )}
         {nationalHistory.length > 0 ? (
           <>
             <div className="competitiveness-list">
@@ -359,8 +375,9 @@ export function ResultPanel({ selection, result }: Props) {
           </>
         ) : (
           <p className="category-path-note">
-            No model-family class win was found in the loaded official winner records. That is not
-            proof that the car cannot be competitive or has never entered Nationals. Browse the
+            No class win for this vehicle scope was found in the five loaded official Nationals.
+            That is not proof that the car cannot be competitive or has never entered Nationals.
+            Browse the
             official{" "}
             <a href={NATIONAL_ARCHIVE_URL} target="_blank" rel="noreferrer">
               SCCA results archive

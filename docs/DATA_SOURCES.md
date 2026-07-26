@@ -141,10 +141,10 @@ Appendix A dataset plus the small reviewed first-party correction layer.
 
 ## Solo Nationals winner history
 
-`src/data/nationals-winners-2016-2025.json` contains 639 class-winner rows from the official
-combined results for the nine Solo Nationals held during the ten-year 2016-2025 window. The 2020
-event was canceled. Each row retains its event year, class, open/ladies division, published winning
-vehicle text, published tire manufacturer, and direct annual-results URL.
+`src/data/nationals-winners-2021-2025.json` contains 349 class-winner rows from the official
+combined results for the five completed Solo Nationals held from 2021 through 2025. Each row retains
+its event year, class, open/ladies division, published winning vehicle text, published tire
+manufacturer, and direct annual-results URL.
 
 `scripts/import-nationals-results.py` separates the vehicle and tire columns by PDF coordinates.
 The official 2022 and 2024 reports are scanned documents, so their cached local copies require OCR.
@@ -152,12 +152,24 @@ The importer applies only explicit OCR cleanup and known tire-manufacturer norma
 rows with no published vehicle and the 2024 Kart Modified Electric exhibition winner rather than
 presenting either as a normal National Championship vehicle result.
 
-The runtime matches these records at model-family level. It does not use a Nationals result to
-classify the current build, and it does not claim that every package or model year in a family is
-equally competitive. The reports publish tire manufacturers, but do not consistently publish tire
-dimensions or exact tire models. Accordingly, the app can show observed manufacturer counts and
-the selected class's legal tire constraints, but cannot support size/model winning-ratio claims
-such as a specific `205/50R15` or `Potenza RE-71RS` percentage.
+The runtime first resolves the selected year to a reviewed generation in
+`src/data/vehicle-generations.ts`, then requires each winning record's published vehicle year to
+fall inside that range. The MX-5 data distinguishes NA 1.6L, NA 1.8L, NB, NC, and ND. A family
+without reviewed generation data uses exact-model-year matching, never a broad family fallback.
+Records without a published model year are excluded because they cannot prove a generation match.
+
+Nationals results do not classify the current build, and a same-generation result does not prove
+that every package is equally competitive. The reports publish tire manufacturers, but do not
+consistently publish tire dimensions or exact tire models. Accordingly, the app can show observed
+manufacturer counts and the selected class's legal tire constraints, but cannot support size/model
+winning-ratio claims such as a specific `205/50R15` or `Potenza RE-71RS` percentage.
+
+Reviewed MX-5 generation sources:
+
+- https://news.mazdausa.com/download/2016_Mazda_MX-5_Press_Kit.pdf
+- https://newsroom.mazda.com/en/publicity/release/2016/201604/160425a.html
+- https://news.mazdausa.com/vehicles-2016-mx-5
+- https://news.mazdausa.com/vehicles-2026-mx-5
 
 Official archive:
 
