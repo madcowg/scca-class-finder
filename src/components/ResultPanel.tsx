@@ -158,21 +158,6 @@ export function ResultPanel({ selection, result }: Props) {
     Boolean(result.selectedClass) &&
     !result.selectedCategory &&
     result.xtremeStreet.status === "eligible";
-  const verifiedPrincipalPlacements = result.mapping
-    ? result.mapping.classes
-        .map((classId) => ({
-          classId,
-          category: categoryForClass(classId)
-        }))
-        .filter(
-          (item): item is { classId: string; category: keyof typeof CATEGORY_LABELS } =>
-            Boolean(item.category)
-        )
-        .sort(
-          (left, right) =>
-            CATEGORY_ORDER.indexOf(left.category) - CATEGORY_ORDER.indexOf(right.category)
-        )
-    : [];
 
   return (
     <section className="results-column" id="result-step" aria-labelledby="result-title">
@@ -229,40 +214,6 @@ export function ResultPanel({ selection, result }: Props) {
       </div>
 
       <ClassificationReason result={result} vehicleName={vehicleName} />
-
-      {result.mapping && verifiedPrincipalPlacements.length > 0 && (
-        <div className="panel placement-panel">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Official placement</p>
-              <h3>Verified current principal-category listings</h3>
-            </div>
-          </div>
-          <ul className="placement-list">
-            {verifiedPrincipalPlacements.map((placement) => (
-              <li key={`${placement.category}-${placement.classId}`}>
-                <span>{CATEGORY_LABELS[placement.category]}</span>
-                <strong>
-                  {classLabel(placement.classId)}
-                  {result.mapping?.classSources?.[placement.classId] && (
-                    <>
-                      <br />
-                      <a
-                        href={result.mapping.classSources[placement.classId].sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={result.mapping.classSources[placement.classId].description}
-                      >
-                        {result.mapping.classSources[placement.classId].ruleSection}
-                      </a>
-                    </>
-                  )}
-                </strong>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {result.supplementalClasses.length > 0 && (
         <div className="supplemental-panel">
