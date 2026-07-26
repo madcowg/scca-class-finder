@@ -218,12 +218,21 @@ export default function App() {
       </main>
 
       <footer>
-        <p>
-          Advisory tool only. Verify the current SCCA Solo Rules, Appendix A, Fastrack bulletins, and any event-specific supplemental regulations before competition.
-        </p>
-        <p>
-          SCCA and Solo are trademarks of Sports Car Club of America. This project is not affiliated with or endorsed by SCCA.
-        </p>
+        <span className="footer-spacer" aria-hidden="true" />
+        <p className="footer-copyright">Copyright 2026 Gabriel Marrero</p>
+        <details className="legal-disclaimer">
+          <summary>Legal Disclaimer</summary>
+          <div className="legal-disclaimer-content">
+            <p>
+              Advisory tool only. Verify the current SCCA Solo Rules, Appendix A, Fastrack
+              bulletins, and any event-specific supplemental regulations before competition.
+            </p>
+            <p>
+              SCCA and Solo are trademarks of Sports Car Club of America. This project is not
+              affiliated with or endorsed by SCCA.
+            </p>
+          </div>
+        </details>
       </footer>
     </div>
   );
