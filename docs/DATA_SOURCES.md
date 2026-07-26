@@ -154,22 +154,27 @@ presenting either as a normal National Championship vehicle result.
 
 The runtime first resolves the selected year to a reviewed generation in
 `src/data/vehicle-generations.ts`, then requires each winning record's published vehicle year to
-fall inside that range. The MX-5 data distinguishes NA 1.6L, NA 1.8L, NB, NC, and ND. A family
-without reviewed generation data uses exact-model-year matching, never a broad family fallback.
-Records without a published model year are excluded because they cannot prove a generation match.
+fall inside that range. When the selected rulebook identity names a reviewed performance package,
+the winning record must identify the same package. The MX-5 data distinguishes NA 1.6L, NA 1.8L,
+NB, NC, and ND. A family without reviewed generation data receives no inferred competition history;
+there is no broad or exact-year fallback across unreviewed families. Records without a published
+model year are excluded because they cannot prove a generation match. The researched family and
+package inventory is maintained in `docs/NATIONALS_FAMILY_RESEARCH.md`.
 
 Nationals results do not classify the current build, and a same-generation result does not prove
-that every package is equally competitive. The reports publish tire manufacturers, but do not
+that every package is equally competitive. Generic winner text is not promoted to a named package,
+and one named package cannot supply evidence for another. The reports publish tire manufacturers, but do not
 consistently publish tire dimensions or exact tire models. Accordingly, the app can show observed
 manufacturer counts and the selected class's legal tire constraints, but cannot support size/model
 winning-ratio claims such as a specific `205/50R15` or `Potenza RE-71RS` percentage.
 
-Reviewed MX-5 generation sources:
+Selected official generation sources:
 
 - https://news.mazdausa.com/download/2016_Mazda_MX-5_Press_Kit.pdf
 - https://newsroom.mazda.com/en/publicity/release/2016/201604/160425a.html
-- https://news.mazdausa.com/vehicles-2016-mx-5
 - https://news.mazdausa.com/vehicles-2026-mx-5
+- https://media.ford.com/content/dam/fordmedia/North%20America/US/2013/12/05/Mustang_Milestones.pdf
+- https://newsroom.porsche.com/en/press-kits/60-Years-Porsche-911/60-Jahre-911---Generationen.html
 
 Official archive:
 

@@ -1,5 +1,9 @@
 import nationalsData from "../data/nationals-winners-2021-2025.json";
-import { VEHICLE_GENERATIONS } from "../data/vehicle-generations";
+import {
+  VEHICLE_GENERATIONS,
+  VEHICLE_HISTORY_VARIANTS,
+  type VehicleHistoryVariantDefinition
+} from "../data/vehicle-generations";
 import type { NationalCompetitionRecord, VehicleSelection } from "./types";
 
 export const NATIONAL_ARCHIVE_URL = "https://www.scca.com/pages/solo-archives";
@@ -27,28 +31,43 @@ export interface NationalHistoryScope {
   label: string;
   startYear: number;
   endYear: number;
-  generationVerified: boolean;
-  sourceUrl: string | null;
+  sourceUrl: string;
+  variantLabel: string | null;
 }
 
 const RECORDS = nationalsData.records as ImportedWinner[];
 
 const MAKE_ALIASES: Record<string, string[]> = {
-  chevrolet: ["chevrolet", "chevy"],
+  chevrolet: ["chevrolet", "chevy", "corvette"],
   mercedesbenz: ["mercedesbenz", "mercedes"],
   volkswagen: ["volkswagen", "vw"],
   alfaromeo: ["alfaromeo", "alfa"],
-  bmw: ["bmw"]
+  bmw: ["bmw", "bimmer"],
+  porsche: ["porsche", "porch"]
 };
 
 const MODEL_ALIASES: Record<string, string[]> = {
+  tt: ["auditt", "tts", "ttrs"],
   mx5miata: ["miata", "mx5", "nd1", "nd2"],
   mustang: ["mustang", "shelbygt350", "shelbygt500"],
-  "3series": ["m3", "325", "328", "330", "335", "340"],
+  "3series": ["325", "328", "330", "335", "340"],
+  m2: ["bmwm2", "m2"],
+  m3: ["bmwm3", "m3", "lrpm3"],
   "4series": ["m4", "428", "430", "435", "440"],
   model3: ["model3"],
   rx7: ["rx7"],
   rx8: ["rx8"],
+  s2000: ["s2000", "pos2000"],
+  eliseexige: ["elise", "exige"],
+  mazda6: ["mazda6", "speed6", "mazdaspeed6"],
+  lancer: ["lancer", "evo", "evolution"],
+  wrx: ["wrx", "sti"],
+  "350z": ["350z"],
+  z: ["nissanz", "zperformance"],
+  "911": ["911", "gt3", "gt3rs", "porscheturbo"],
+  cayman: ["cayman", "gt4", "gt4rs"],
+  "718": ["718", "boxster", "cayman", "spyder", "gt4", "gt4rs"],
+  golf: ["golf", "gti"],
   gr86: ["gr86", "toyota86"],
   "86": ["gr86", "toyota86"],
   frs: ["frs"]
@@ -78,7 +97,65 @@ function compact(value: string): string {
 }
 
 function generationKey(make: string, model: string): string {
-  return `${compact(make)}:${compact(model)}`;
+  const normalizedMake = compact(make);
+  const normalizedModel = compact(model);
+
+  if (
+    normalizedMake === "porsche" &&
+    (
+      normalizedModel.includes("911") ||
+      normalizedModel.startsWith("turbo") ||
+      normalizedModel.includes("gt2")
+    )
+  ) {
+    return "porsche:911";
+  }
+  if (normalizedMake === "mini" && normalizedModel === "johncooperworks") {
+    return "mini:cooper";
+  }
+  if (normalizedMake === "toyota" && normalizedModel === "grsupra") {
+    return "toyota:supra";
+  }
+
+  return `${normalizedMake}:${normalizedModel}`;
+}
+
+export function hasReviewedNationalFamily(selection: VehicleSelection): boolean {
+  return Boolean(
+    selection.make &&
+    selection.model &&
+    VEHICLE_GENERATIONS[generationKey(selection.make, selection.model)]
+  );
+}
+
+function findHistoryVariant(
+  familyKey: string,
+  value: string,
+  termsKey: "selectionTerms" | "winnerTerms"
+): VehicleHistoryVariantDefinition | null {
+  const normalizedValue = compact(value);
+  return (
+    VEHICLE_HISTORY_VARIANTS[familyKey]?.find((variant) =>
+      variant[termsKey].some((term) => normalizedValue.includes(compact(term)))
+    ) ?? null
+  );
+}
+
+function selectedHistoryIdentity(
+  selection: VehicleSelection,
+  familyKey: string
+): string {
+  if (selection.variant) return selection.variant;
+
+  const model = compact(selection.model);
+  if (
+    (familyKey === "porsche:911" && model.includes("turbo")) ||
+    (familyKey === "mini:cooper" && model === "johncooperworks")
+  ) {
+    return selection.model;
+  }
+
+  return "";
 }
 
 export function getNationalHistoryScope(
@@ -94,29 +171,30 @@ export function getNationalHistoryScope(
     return null;
   }
 
-  const generation = VEHICLE_GENERATIONS[
-    generationKey(selection.make, selection.model)
-  ]?.find(
+  const familyKey = generationKey(selection.make, selection.model);
+  const familyGenerations = VEHICLE_GENERATIONS[familyKey];
+  if (!familyGenerations) return null;
+
+  const generation = familyGenerations.find(
     (candidate) =>
       selectedYear >= candidate.startYear && selectedYear <= candidate.endYear
   );
 
-  if (generation) {
-    return {
-      label: `${generation.label} (${generation.startYear}-${generation.endYear})`,
-      startYear: generation.startYear,
-      endYear: generation.endYear,
-      generationVerified: true,
-      sourceUrl: generation.sourceUrl
-    };
-  }
+  if (!generation) return null;
+  const variant = findHistoryVariant(
+    familyKey,
+    selectedHistoryIdentity(selection, familyKey),
+    "selectionTerms"
+  );
 
   return {
-    label: `${selectedYear} model year only`,
-    startYear: selectedYear,
-    endYear: selectedYear,
-    generationVerified: false,
-    sourceUrl: null
+    label: `${generation.label} (${generation.startYear}-${generation.endYear})${
+      variant ? ` • ${variant.label}` : ""
+    }`,
+    startYear: generation.startYear,
+    endYear: generation.endYear,
+    sourceUrl: generation.sourceUrl,
+    variantLabel: variant?.label ?? null
   };
 }
 
@@ -141,8 +219,9 @@ function makeMatches(make: string, vehicle: string): boolean {
   return aliases.some((alias) => normalizedVehicle.includes(alias));
 }
 
-function modelMatches(model: string, vehicle: string): boolean {
-  const normalizedModel = compact(model);
+function modelMatches(make: string, model: string, vehicle: string): boolean {
+  const normalizedModel =
+    generationKey(make, model).split(":").at(-1) ?? compact(model);
   const normalizedVehicle = compact(vehicle);
   const aliases = MODEL_ALIASES[normalizedModel] ?? [];
   if (aliases.some((alias) => normalizedVehicle.includes(alias))) return true;
@@ -155,14 +234,33 @@ export function getNationalCompetitionHistory(
 ): NationalCompetitionRecord[] {
   const scope = getNationalHistoryScope(selection);
   if (!scope) return [];
+  const familyKey = generationKey(selection.make, selection.model);
+  const selectedVariant = findHistoryVariant(
+    familyKey,
+    selectedHistoryIdentity(selection, familyKey),
+    "selectionTerms"
+  );
 
   return RECORDS.filter(
-    (record) =>
-      record.vehicleYear !== null &&
-      record.vehicleYear >= scope.startYear &&
-      record.vehicleYear <= scope.endYear &&
-      makeMatches(selection.make, record.vehicle) &&
-      modelMatches(selection.model, record.vehicle)
+    (record) => {
+      const winningVariant = findHistoryVariant(
+        familyKey,
+        record.vehicle,
+        "winnerTerms"
+      );
+      const variantMatches = selectedVariant
+        ? winningVariant?.id === selectedVariant.id
+        : winningVariant === null;
+
+      return (
+        record.vehicleYear !== null &&
+        record.vehicleYear >= scope.startYear &&
+        record.vehicleYear <= scope.endYear &&
+        makeMatches(selection.make, record.vehicle) &&
+        modelMatches(selection.make, selection.model, record.vehicle) &&
+        variantMatches
+      );
+    }
   )
     .map((record) => ({
       year: record.eventYear,

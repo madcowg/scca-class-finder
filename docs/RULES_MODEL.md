@@ -70,7 +70,8 @@ A classing tool should fail safely. The engine returns **manual review required*
 - `reviewed-vehicles2026.json` and `overrides2026.ts`: a small correction and supplemental layer for exact package aliases and separately reviewed classes. It intentionally does not copy previous-year or third-party mappings forward.
 - `rules.ts`: explicit category allowances for the user-facing modification profiles.
 - `nationals-winners-2021-2025.json`: official class-winner evidence from the five completed Nationals held from 2021 through 2025.
-- `vehicle-generations.ts`: reviewed model-year generation boundaries for competition-history matching; unreviewed families use exact-year matching.
+- `vehicle-generations.ts`: reviewed model-year generation and package boundaries for competition-history matching; unreviewed or ambiguous families receive no inferred history.
+- `NATIONALS_FAMILY_RESEARCH.md`: source-backed competitive-family scope and deliberate exclusions for the five-event Nationals window.
 
 ## Current source-handling rules
 
@@ -87,7 +88,7 @@ A classing tool should fail safely. The engine returns **manual review required*
 5. Update exact-year aliases only in the reviewed first-party data; never promote imported archive class arrays into runtime decisions.
 6. Update current placement only from current official text, and keep future-dated proposals out of the live mapping until they become effective.
 7. Run `npx vite-node scripts/audit-rulebook-coverage.ts` and investigate every reachability regression.
-8. Regenerate the Nationals winner dataset from the official annual PDFs when the five-event window changes, and review importer exceptions.
+8. Regenerate the Nationals winner dataset from the official annual PDFs when the five-event window changes, review every new family/package identity, and update `NATIONALS_FAMILY_RESEARCH.md`.
 9. Add regression tests for every corrected vehicle or allowance.
 10. Run `npm run validate:data`, `npm test`, `npm run typecheck`, and `npm run build`.
 

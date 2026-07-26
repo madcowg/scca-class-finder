@@ -71,6 +71,7 @@ Vite uses `base: "./"`, so the build works from a repository subpath.
 - `docs/CODE_REVIEW.md` - defects found in the original scaffold
 - `docs/RULES_MODEL.md` - logic, limits, and update process
 - `docs/DATA_SOURCES.md` - authority hierarchy and source lineage
+- `docs/NATIONALS_FAMILY_RESEARCH.md` - reviewed competitive families, generations, and package boundaries
 
 ## Data and authority
 
@@ -113,12 +114,13 @@ copied from a prior year or third-party tool.
 National competition history is intentionally conservative and source-backed. The result view
 matches the selected vehicle to official class winners from the five completed Solo Nationals held
 from 2021 through 2025. A winner must have a published vehicle year inside the selected car's
-reviewed generation range. If that range has not been reviewed, the app matches only the exact
-model year rather than mixing generations. The annual reports publish the winning vehicle text and
-tire manufacturer, but not a dependable tire size or exact tire model. The app therefore reports
-observed manufacturer counts and current class tire rules without fabricating size/model win ratios.
-An empty panel means no matching class win was found in the loaded records, not that the vehicle
-never entered or cannot be competitive.
+reviewed generation range and, when named, the same reviewed performance package. If a family or
+year range has not been reviewed, the app shows no inferred history rather than mixing identities.
+The annual reports publish the winning vehicle text and tire manufacturer, but not a dependable tire
+size or exact tire model. The app therefore reports observed manufacturer counts and current class
+tire rules without fabricating size/model win ratios. An empty panel means no matching class win was
+found in the loaded records, not that the vehicle never entered or cannot be competitive. See
+`docs/NATIONALS_FAMILY_RESEARCH.md`.
 
 ## Important limitation
 

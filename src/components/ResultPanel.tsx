@@ -10,6 +10,7 @@ import type { ClassificationResult, VehicleSelection } from "../lib/types";
 import {
   getNationalCompetitionHistory,
   getNationalHistoryScope,
+  hasReviewedNationalFamily,
   legalTireGuidance,
   NATIONAL_ARCHIVE_URL,
   NATIONAL_EVENT_YEARS,
@@ -145,6 +146,7 @@ export function ResultPanel({ selection, result }: Props) {
   const vehicleName = vehicleSelectionLabel(selection);
   const nationalHistory = getNationalCompetitionHistory(selection);
   const nationalHistoryScope = getNationalHistoryScope(selection);
+  const reviewedNationalFamily = hasReviewedNationalFamily(selection);
   const tireBrands = summarizeTireBrands(nationalHistory);
   const historyByClass = [...nationalHistory.reduce((groups, record) => {
     const records = groups.get(record.classId) ?? [];
@@ -280,9 +282,10 @@ export function ResultPanel({ selection, result }: Props) {
               nationalHistoryScope.label
             )}
             .{" "}
-            {nationalHistoryScope.generationVerified
-              ? "Winner records from other generations are excluded."
-              : "A reviewed generation range is not loaded for this model, so the app uses the exact model year rather than risk mixing generations."}
+            Winner records from other generations are excluded.
+            {nationalHistoryScope.variantLabel
+              ? " Records for other named performance packages are excluded too."
+              : ""}
           </p>
         )}
         {nationalHistory.length > 0 ? (
@@ -375,9 +378,11 @@ export function ResultPanel({ selection, result }: Props) {
           </>
         ) : (
           <p className="category-path-note">
-            No class win for this vehicle scope was found in the five loaded official Nationals.
+            {reviewedNationalFamily
+              ? "This competitive model family does not have a safe same-generation match for the selected year, or no class win was found inside that generation during the five loaded Nationals. "
+              : "This model family does not appear in the reviewed 2021-2025 National Championship winner families, so no broader vehicle-history match is shown. "}
             That is not proof that the car cannot be competitive or has never entered Nationals.
-            Browse the
+            Browse the{" "}
             official{" "}
             <a href={NATIONAL_ARCHIVE_URL} target="_blank" rel="noreferrer">
               SCCA results archive
