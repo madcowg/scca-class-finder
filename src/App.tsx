@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import alsccaLogo from "./assets/ALSCCA_logo.png";
 import { BuildReview } from "./components/BuildReview";
 import { BuildEditor } from "./components/BuildEditor";
+import { RegionalContactPanel } from "./components/RegionalContactPanel";
 import { ResultPanel } from "./components/ResultPanel";
 import { VehicleSelector } from "./components/VehicleSelector";
 import { classifyVehicle } from "./lib/classifier";
@@ -131,23 +132,11 @@ export default function App() {
       </header>
 
       {contactOpen && (
-        <aside className="contact-panel" id="contact-panel" aria-labelledby="contact-title">
-          <div>
-            <p className="eyebrow">Regional support</p>
-            <h2 id="contact-title">Need a human answer?</h2>
-            <p>
-              ZIP-code routing to the right regional chair is planned for the next release. Until
-              then, keep the exact vehicle and build details from this page ready for your region.
-            </p>
-          </div>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setContactOpen(false)}
-          >
-            Close
-          </button>
-        </aside>
+        <RegionalContactPanel
+          selection={selection}
+          build={build}
+          onClose={() => setContactOpen(false)}
+        />
       )}
 
       <main>

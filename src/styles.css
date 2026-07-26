@@ -161,11 +161,11 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 .contact-panel {
   width: min(1220px, calc(100% - 32px));
   margin: 18px auto 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 24px;
-  padding: 18px 22px;
+  padding: 22px;
   border: 1px solid #e3a4ad;
   border-left: 6px solid var(--red);
   border-radius: 12px;
@@ -173,8 +173,43 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
   box-shadow: var(--shadow);
 }
 
-.contact-panel h2 { margin: 0 0 4px; font-size: 20px; }
-.contact-panel p:not(.eyebrow) { max-width: 720px; margin: 0; color: var(--muted); font-size: 14px; }
+.contact-panel-main { min-width: 0; display: grid; gap: 16px; }
+.contact-heading { display: grid; gap: 4px; }
+.contact-panel h2 { margin: 0; font-size: 22px; }
+.contact-panel h3 { margin: 3px 0 5px; font-size: 17px; }
+.contact-panel p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.contact-fields { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(180px, .6fr); gap: 14px; max-width: 700px; }
+.contact-field { align-content: start; }
+.contact-privacy { padding-left: 23px; background: linear-gradient(90deg, var(--green) 0 4px, transparent 4px); }
+.contact-help { color: var(--red-dark) !important; font-weight: 800; }
+.contact-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+.contact-route-direct { border-color: #83b493; }
+.contact-actions { display: flex; align-items: stretch; justify-content: flex-end; flex-wrap: wrap; gap: 9px; }
+.contact-actions .primary-button, .contact-actions .secondary-button { min-height: 42px; font-size: 13px; }
+.contact-preview { overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.contact-preview summary { padding: 12px 14px; color: var(--ink); font-size: 14px; font-weight: 900; cursor: pointer; }
+.contact-preview[open] summary { border-bottom: 1px solid var(--line); background: var(--surface-soft); }
+.contact-preview pre {
+  margin: 0;
+  padding: 15px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.contact-close { white-space: nowrap; }
 
 main { width: min(1200px, 100%); margin: 0 auto; padding: 0 20px 48px; }
 
@@ -363,12 +398,16 @@ input { padding-right: 14px; }
 .wizard-actions-end { justify-content: flex-end; }
 .primary-button {
   min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 9px 17px;
   border: 1px solid var(--red);
   border-radius: 8px;
   color: #fff;
   background: var(--red);
   font-weight: 900;
+  text-decoration: none;
 }
 .primary-button:hover:not(:disabled) { background: var(--red-dark); }
 .primary-button:disabled { cursor: not-allowed; opacity: .48; }
@@ -504,7 +543,10 @@ footer p { max-width: 700px; margin: 0; }
   .intro-band { margin-top: 18px; }
   .progress-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .vehicle-grid, .build-grid, .review-grid { grid-template-columns: 1fr; }
-  .contact-panel { align-items: flex-start; }
+  .contact-panel { grid-template-columns: 1fr; }
+  .contact-close { justify-self: start; }
+  .contact-route { grid-template-columns: 1fr; }
+  .contact-actions { justify-content: flex-start; }
   .class-lockup { align-items: flex-start; }
   .class-code { min-width: 78px; height: 78px; font-size: 25px; }
   .competitiveness-list, .tire-evidence-grid { grid-template-columns: 1fr; }
@@ -530,5 +572,8 @@ footer p { max-width: 700px; margin: 0; }
   .class-lockup { gap: 12px; }
   .class-code { min-width: 68px; height: 68px; font-size: 22px; border-radius: 11px; }
   .result-kicker { align-items: flex-start; flex-direction: column; }
-  .contact-panel { width: calc(100% - 22px); margin-top: 11px; flex-direction: column; }
+  .contact-panel { width: calc(100% - 22px); margin-top: 11px; padding: 17px; }
+  .contact-fields { grid-template-columns: 1fr; }
+  .contact-actions { display: grid; grid-template-columns: 1fr; }
+  .contact-actions .primary-button, .contact-actions .secondary-button, .contact-close { width: 100%; }
 }

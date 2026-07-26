@@ -180,6 +180,24 @@ Official archive:
 
 - https://www.scca.com/pages/solo-archives
 
+## Regional contact routing
+
+The contact panel is intentionally client-only. It uses the selected vehicle and build already in
+browser memory, asks only for a name and five-digit ZIP, and opens the visitor's email client with a
+prepared message. It does not collect an email address or send/store contact information.
+
+The only direct address currently authorized for the app is the Alabama Region Solo chair:
+`alscca.solochair@gmail.com`. Direct routing is limited to a deliberately conservative Central
+Alabama ZIP-prefix set (`350`, `351`, `352`, `360`, and `361`). These prefixes are application
+routing coverage, not a claim about official SCCA Region boundaries. Every direct match includes a
+link to verify the result, and every other valid ZIP goes to the official SCCA Region locator:
+
+- https://www.scca.com/regions
+
+The app does not scrape the SCCA member directory or infer an unverified chair address. Additional
+direct contacts should be added only with an authorized public role address and a reviewed service
+area; otherwise the official locator remains the safe path.
+
 ## Required maintenance practice
 
 For every reported classing error:

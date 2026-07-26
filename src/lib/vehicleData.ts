@@ -1160,9 +1160,20 @@ export function searchVehicles(query: string, limit = 20): VehicleSelection[] {
 
 export function vehicleSelectionLabel(selection: VehicleSelection): string {
   if (selection.notListed) return selection.manualDescription || "Vehicle not listed";
-  const displayVariant = selection.variant?.toLowerCase().startsWith(`${selection.model.toLowerCase()} `)
-    ? selection.variant.slice(selection.model.length).trim()
-    : selection.variant;
+  const modelWords = selection.model.trim().split(/\s+/);
+  const trailingModelAlias = modelWords[modelWords.length - 1];
+  const variantPrefix = selection.variant?.toLowerCase();
+  let displayVariant = selection.variant;
+
+  if (variantPrefix?.startsWith(`${selection.model.toLowerCase()} `)) {
+    displayVariant = selection.variant?.slice(selection.model.length).trim();
+  } else if (
+    trailingModelAlias.length >= 4 &&
+    variantPrefix?.startsWith(`${trailingModelAlias.toLowerCase()} `)
+  ) {
+    displayVariant = selection.variant?.slice(trailingModelAlias.length).trim();
+  }
+
   return [selection.year, selection.make, selection.model, displayVariant]
     .filter(Boolean)
     .join(" ");
