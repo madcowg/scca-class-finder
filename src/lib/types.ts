@@ -157,6 +157,7 @@ export interface ClassificationResult {
   preparedXp: PreparedXpEvaluation;
   preparedCp: PreparedCpEvaluation;
   preparedDp: PreparedDpEvaluation;
+  preparedEp: PreparedEpEvaluation;
   messages: string[];
 }
 
@@ -216,6 +217,16 @@ export interface PreparedDpEvaluation {
   /** Minimum weight without driver (lbs) computed from the DP displacement formula. */
   minimumWeight: number | null;
   /** The matched DP listing's description, when the vehicle is specifically listed. */
+  matchedListing: string | null;
+}
+
+export interface PreparedEpEvaluation {
+  status: "eligible" | "blocked" | "manual-review" | "not-listed";
+  reasons: string[];
+  blockers: string[];
+  /** Minimum weight without driver (lbs) computed from the EP displacement formula. */
+  minimumWeight: number | null;
+  /** The matched EP listing's description, when the vehicle is specifically listed. */
   matchedListing: string | null;
 }
 
