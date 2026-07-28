@@ -1,4 +1,5 @@
 import cpData from "../data/prepared-cp-2026.json";
+import { findSingleListing, type PreparedListingBase } from "./preparedListingMatch";
 import type { BuildProfile, PreparedCpEvaluation, VehicleSelection } from "./types";
 
 /**
@@ -9,10 +10,7 @@ import type { BuildProfile, PreparedCpEvaluation, VehicleSelection } from "./typ
  * one (e.g. Corvair, Yenko Stinger).
  */
 
-interface CpListing {
-  manufacturer: string;
-  description: string;
-  yearRanges: Array<[number, number]>;
+interface CpListing extends PreparedListingBase {
   weightOverrideLbs: number | null;
   page: number;
 }
@@ -20,68 +18,13 @@ interface CpListing {
 const listings = cpData.listings as CpListing[];
 const flatWeights = cpData.flatWeightsLbs;
 
-function normalizeWords(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-function cpManufacturerMakes(manufacturer: string): string[] {
-  const parenMatch = manufacturer.match(/\(([^)]*)\)/);
-  const source = parenMatch ? parenMatch[1] : manufacturer.replace(/\s*\([^)]*\)\s*/g, "");
-  return source
-    .split(/\s*(?:,|&)\s*/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function listingSegments(description: string): string[] {
-  return description
-    .split("(")[0]
-    .split(/[,&–-]/)
-    .map((s) => normalizeWords(s))
-    .filter((s) => s.length > 1);
-}
-
-function yearApplies(yearRanges: Array<[number, number]>, year: string): boolean {
-  if (yearRanges.length === 0) return true;
-  const y = Number(year);
-  if (!Number.isInteger(y)) return false;
-  return yearRanges.some(([start, end]) => y >= start && y <= end);
-}
-
-function matchesMake(listing: CpListing, make: string): boolean {
-  const target = normalizeWords(make);
-  return cpManufacturerMakes(listing.manufacturer).some((m) => normalizeWords(m) === target);
-}
-
-function matchesModel(listing: CpListing, selection: VehicleSelection): boolean {
-  // Multi-name headers like "Firebird & TransAm" or "S10, S15, & Sonoma" list several
-  // model names under one listing; any one of them naming the exact selected model or
-  // variant is a match. This is intentionally an EXACT match (not substring containment):
-  // CP frequently lists a base name and a more qualified name as separate rows for the
-  // same manufacturer (e.g. "Capri" vs "Capri Turbo"), and substring matching would treat
-  // the base name as matching both, making the result ambiguous.
-  const segments = listingSegments(listing.description);
-  const modelIdentity = normalizeWords(selection.model);
-  const variantIdentity = selection.variant ? normalizeWords(selection.variant) : null;
-  return segments.some((segment) => segment === modelIdentity || segment === variantIdentity);
-}
-
-function findCpListing(selection: VehicleSelection, year: string): CpListing | null {
-  const candidates = listings.filter(
-    (listing) => matchesMake(listing, selection.make) && yearApplies(listing.yearRanges, year)
-  );
-  const matches = candidates.filter((listing) => matchesModel(listing, selection));
-  return matches.length === 1 ? matches[0] : null;
-}
-
 export function evaluatePreparedCP(
   selection: VehicleSelection,
   build: BuildProfile
 ): PreparedCpEvaluation {
-  const listing = selection.notListed ? null : findCpListing(selection, selection.year);
+  const listing = selection.notListed
+    ? null
+    : findSingleListing(listings, selection, selection.year);
   if (!listing) {
     return {
       status: "not-listed",

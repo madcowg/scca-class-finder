@@ -5,6 +5,7 @@ import { evaluateStreetModified } from "./streetModified";
 import { evaluateModifiedProduction } from "./modified";
 import { evaluatePreparedXp } from "./prepared";
 import { evaluatePreparedCP } from "./preparedCP";
+import { evaluatePreparedDP } from "./preparedDP";
 import type {
   BuildProfile,
   CategoryEvaluation,
@@ -12,6 +13,7 @@ import type {
   ModificationAssessment,
   ModifiedProductionEvaluation,
   PreparedCpEvaluation,
+  PreparedDpEvaluation,
   PreparedXpEvaluation,
   PrincipalCategory,
   RuleFinding,
@@ -95,7 +97,8 @@ function formulaEvalFor(
   streetModifiedEval: StreetModifiedEvaluation | null,
   modifiedProductionEval: ModifiedProductionEvaluation | null,
   preparedXpEval: PreparedXpEvaluation | null,
-  preparedCpEval: PreparedCpEvaluation | null
+  preparedCpEval: PreparedCpEvaluation | null,
+  preparedDpEval: PreparedDpEvaluation | null
 ): FormulaCategoryEval | null {
   if (category === "streetModified" && streetModifiedEval) {
     return {
@@ -112,12 +115,20 @@ function formulaEvalFor(
     };
   }
   if (category === "prepared") {
-    // A vehicle specifically listed in CP is authoritative over XP's generic catch-all formula.
+    // A vehicle specifically listed in CP or DP is authoritative over XP's generic
+    // catch-all formula; CP and DP are mutually exclusive per-vehicle lists.
     if (preparedCpEval && preparedCpEval.status !== "not-listed") {
       return {
         status: preparedCpEval.status,
         classId: preparedCpEval.status === "eligible" ? "cp" : undefined,
         blockers: preparedCpEval.blockers
+      };
+    }
+    if (preparedDpEval && preparedDpEval.status !== "not-listed") {
+      return {
+        status: preparedDpEval.status,
+        classId: preparedDpEval.status === "eligible" ? "dp" : undefined,
+        blockers: preparedDpEval.blockers
       };
     }
     if (preparedXpEval) {
@@ -139,7 +150,8 @@ function evaluateCategory(
   streetModifiedEval: StreetModifiedEvaluation | null,
   modifiedProductionEval: ModifiedProductionEvaluation | null = null,
   preparedXpEval: PreparedXpEvaluation | null = null,
-  preparedCpEval: PreparedCpEvaluation | null = null
+  preparedCpEval: PreparedCpEvaluation | null = null,
+  preparedDpEval: PreparedDpEvaluation | null = null
 ): CategoryEvaluation {
   // A specifically-listed vehicle classId (from the reviewed catalog or official Appendix A)
   // is authoritative over the generic Section 16/17/18 formula, which only fills in when no
@@ -147,7 +159,14 @@ function evaluateCategory(
   const mappedClassId = mapping ? classForCategory(mapping.classes, category) : undefined;
   const formulaEval = mappedClassId
     ? null
-    : formulaEvalFor(category, streetModifiedEval, modifiedProductionEval, preparedXpEval, preparedCpEval);
+    : formulaEvalFor(
+        category,
+        streetModifiedEval,
+        modifiedProductionEval,
+        preparedXpEval,
+        preparedCpEval,
+        preparedDpEval
+      );
   const classId = mappedClassId ?? (formulaEval?.status === "eligible" ? formulaEval.classId : undefined);
   const classSpecificBlockers = classId
     ? findings.filter((finding) => {
@@ -441,6 +460,7 @@ export function classifyVehicleWithMapping(
   const modifiedProduction = evaluateModifiedProduction(build);
   const preparedXp = evaluatePreparedXp(build);
   const preparedCp = evaluatePreparedCP(selection, build);
+  const preparedDp = evaluatePreparedDP(selection, build);
   const evaluations = CATEGORY_ORDER.map((category) =>
     evaluateCategory(
       category,
@@ -450,7 +470,8 @@ export function classifyVehicleWithMapping(
       streetModified,
       modifiedProduction,
       preparedXp,
-      preparedCp
+      preparedCp,
+      preparedDp
     )
   );
   const selectedPrincipal = evaluations.find((evaluation) => evaluation.status === "eligible");
@@ -485,6 +506,7 @@ export function classifyVehicleWithMapping(
     modifiedProduction,
     preparedXp,
     preparedCp,
+    preparedDp,
     messages: buildMessages(mapping, preparation, evaluations, xtremeStreet)
   };
 }
@@ -501,6 +523,7 @@ export function classifyVehicle(
   const modifiedProduction = evaluateModifiedProduction(build);
   const preparedXp = evaluatePreparedXp(build);
   const preparedCp = evaluatePreparedCP(selection, build);
+  const preparedDp = evaluatePreparedDP(selection, build);
 
   if (!mapping) {
     const vehicleMessage = selection.notListed
@@ -517,7 +540,8 @@ export function classifyVehicle(
             streetModified,
             modifiedProduction,
             preparedXp,
-            preparedCp
+            preparedCp,
+            preparedDp
           )
         : {
             category,
@@ -545,6 +569,7 @@ export function classifyVehicle(
       modifiedProduction,
       preparedXp,
       preparedCp,
+      preparedDp,
       messages: selectedPrincipal
         ? [
             `The exact Appendix A vehicle placement is still missing, but the separately evaluated ${CATEGORY_SECTIONS[selectedPrincipal.category]} formula supports ` +

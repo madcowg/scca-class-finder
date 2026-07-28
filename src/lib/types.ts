@@ -80,6 +80,10 @@ export type BuildProfile = {
   activeReactiveSuspension: string;
   rearWeightBiasOver51: string;
   cpEngineConfiguration: string;
+  valveCountPerCylinder: string;
+  variableCamTiming: string;
+  wheelWidthCategory: string;
+  alternateEngineAllowance: string;
 };
 
 export type BuildField = keyof BuildProfile;
@@ -152,6 +156,7 @@ export interface ClassificationResult {
   modifiedProduction: ModifiedProductionEvaluation;
   preparedXp: PreparedXpEvaluation;
   preparedCp: PreparedCpEvaluation;
+  preparedDp: PreparedDpEvaluation;
   messages: string[];
 }
 
@@ -201,6 +206,16 @@ export interface PreparedCpEvaluation {
   /** Minimum weight without driver (lbs) computed from the CP flat-rate table. */
   minimumWeight: number | null;
   /** The matched CP listing's description, when the vehicle is specifically listed. */
+  matchedListing: string | null;
+}
+
+export interface PreparedDpEvaluation {
+  status: "eligible" | "blocked" | "manual-review" | "not-listed";
+  reasons: string[];
+  blockers: string[];
+  /** Minimum weight without driver (lbs) computed from the DP displacement formula. */
+  minimumWeight: number | null;
+  /** The matched DP listing's description, when the vehicle is specifically listed. */
   matchedListing: string | null;
 }
 

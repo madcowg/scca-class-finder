@@ -1271,6 +1271,129 @@ export const RULE_GROUPS: RuleGroup[] = [
     ]
   },
   {
+    field: "valveCountPerCylinder",
+    title: "Valve count per cylinder (DP/EP)",
+    help: "DP and EP use a different displacement-based weight rate depending on 2 vs 3-4 valves per cylinder.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose a valve count before relying on a DP/EP result.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP)"
+      },
+      {
+        value: "two",
+        label: "2 valves per cylinder",
+        description: "DP: 1.00x displacement (cc). EP: 1.00x displacement (cc).",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP)"
+      },
+      {
+        value: "threeOrFour",
+        label: "3 or 4 valves per cylinder",
+        description: "DP: 0.75x displacement (cc) + 500 lbs. EP's rate additionally depends on displacement above/below 1667cc.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP)"
+      }
+    ]
+  },
+  {
+    field: "variableCamTiming",
+    title: "Variable camshaft timing and/or lift (DP)",
+    help: "DP adds 50 lbs for variable cam timing or lift.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose an answer before relying on a DP result.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP)"
+      },
+      {
+        value: "yes",
+        label: "Yes",
+        description: "Adds 50 lbs to the DP minimum weight.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP)"
+      },
+      {
+        value: "no",
+        label: "No",
+        description: "No variable-cam-timing weight adjustment applies.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP)"
+      }
+    ]
+  },
+  {
+    field: "wheelWidthCategory",
+    title: "Widest competition wheel (DP/EP/FP)",
+    help: "DP/EP/FP add weight for wheels wider than 10in, up to a 12in maximum.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose a wheel width before relying on a DP/EP/FP result.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP/FP)"
+      },
+      {
+        value: "upTo10in",
+        label: "10 inches or less",
+        description: "No wheel-width weight adjustment applies.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP/FP)"
+      },
+      {
+        value: "over10to11in",
+        label: "Over 10 inches, up to 11 inches",
+        description: "Adds 50 lbs to the minimum weight.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP/FP)"
+      },
+      {
+        value: "over11to12in",
+        label: "Over 11 inches, up to 12 inches (maximum allowed)",
+        description: "Adds 100 lbs to the minimum weight.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP/FP)"
+      }
+    ]
+  },
+  {
+    field: "alternateEngineAllowance",
+    title: "Alternate Engine Allowance (DP/EP/FP)",
+    help: "DP/EP/FP add a small per-cc weight penalty for using the Alternate Engine Allowance; DP's overall weight cap is also waived when this is used.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose an answer before relying on a DP/EP/FP result.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP/FP)"
+      },
+      {
+        value: "yes",
+        label: "Yes",
+        description: "Adds 0.05 lbs per cc of displacement to the minimum weight.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP/FP)"
+      },
+      {
+        value: "no",
+        label: "No",
+        description: "No alternate-engine weight adjustment applies.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (DP/EP/FP)"
+      }
+    ]
+  },
+  {
     field: "other",
     title: "Other modifications",
     help: "Use this catch-all so an unrepresented performance change cannot be silently ignored.",
@@ -1331,7 +1454,11 @@ export const DEFAULT_BUILD: BuildProfile = {
   aeroWingsPresent: "unknown",
   activeReactiveSuspension: "unknown",
   rearWeightBiasOver51: "unknown",
-  cpEngineConfiguration: "unknown"
+  cpEngineConfiguration: "unknown",
+  valveCountPerCylinder: "unknown",
+  variableCamTiming: "unknown",
+  wheelWidthCategory: "unknown",
+  alternateEngineAllowance: "unknown"
 };
 
 export function findRuleOption(field: keyof BuildProfile, value: string) {
