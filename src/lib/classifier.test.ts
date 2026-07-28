@@ -589,6 +589,36 @@ describe("classifyVehicle", () => {
     expect(result.messages[0]).toContain("outside the reviewed catalog");
   });
 
+  it("still resolves XA/XB from the independent Section 21 path when the exact vehicle has no reviewed Appendix A mapping", () => {
+    const result = classifyVehicle(
+      { make: "Example", model: "Imaginary GT", year: "2026" },
+      {
+        ...DEFAULT_BUILD,
+        engine: "extreme",
+        xtremeVehicleType: "production",
+        drivetrainLayout: "rwd",
+        xtremePowertrain: "ice",
+        competitionWeight: "2930to3179"
+      }
+    );
+    expect(result.mapping).toBeNull();
+    expect(result.selectedClass).toBe("xa");
+    expect(result.confidence).toBe("limited");
+    expect(result.supplementalClasses).toEqual(expect.arrayContaining(["xa", "xb"]));
+    expect(result.xtremeStreet.status).toBe("eligible");
+  });
+
+  it("keeps a fully unresolved vehicle at manual review when Xtreme Street facts are also missing", () => {
+    const result = classifyVehicle(
+      { make: "Example", model: "Imaginary GT", year: "2026" },
+      DEFAULT_BUILD
+    );
+    expect(result.mapping).toBeNull();
+    expect(result.selectedClass).toBeNull();
+    expect(result.confidence).toBe("manual-review");
+    expect(result.supplementalClasses).toEqual([]);
+  });
+
   it("stops at manual review when stale higher-category mappings are not officially verified", () => {
     const camaro = classifyVehicle(
       { make: "Chevrolet", model: "Camaro (V6)", year: "2010" },

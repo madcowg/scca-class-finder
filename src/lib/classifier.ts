@@ -402,11 +402,12 @@ export function classifyVehicle(
     const vehicleMessage = selection.notListed
       ? "This vehicle is outside the reviewed catalog. Send the exact year, make, model, and package details to a regional chair instead of guessing."
       : "This exact year, model, and submodel does not yet have a reviewed first-party placement in this app. Do not guess from a similar trim; send it for manual review.";
+    const xtremeEligible = xtremeStreet.status === "eligible" && xtremeStreet.recommendedClass;
     return {
       mapping: null,
       selectedCategory: null,
-      selectedClass: null,
-      confidence: "manual-review",
+      selectedClass: xtremeEligible ? xtremeStreet.recommendedClass : null,
+      confidence: xtremeEligible ? "limited" : "manual-review",
       evaluations: CATEGORY_ORDER.map((category) => ({
         category,
         status: "manual-review",
@@ -417,14 +418,19 @@ export function classifyVehicle(
       })),
       findings,
       preparation,
-      supplementalClasses: [],
+      supplementalClasses: [...xtremeStreet.eligibleClasses],
       xtremeStreet,
-      messages: [
-        vehicleMessage,
-        preparation.minimumLegalCategory
-          ? `The modification profile is first legal in ${preparation.minimumLegalCategory}, but the exact vehicle placement is still missing.`
-          : "The modification profile cannot be completed automatically from the selected details."
-      ]
+      messages: xtremeEligible
+        ? [
+            "The exact Appendix A vehicle placement is still missing, but the separately evaluated Section 21 path supports " +
+              `${xtremeStreet.recommendedClass?.toUpperCase()} independent of that placement.`
+          ]
+        : [
+            vehicleMessage,
+            preparation.minimumLegalCategory
+              ? `The modification profile is first legal in ${preparation.minimumLegalCategory}, but the exact vehicle placement is still missing.`
+              : "The modification profile cannot be completed automatically from the selected details."
+          ]
     };
   }
 
