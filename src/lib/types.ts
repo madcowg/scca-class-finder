@@ -79,6 +79,7 @@ export type BuildProfile = {
   aeroWingsPresent: string;
   activeReactiveSuspension: string;
   rearWeightBiasOver51: string;
+  cpEngineConfiguration: string;
 };
 
 export type BuildField = keyof BuildProfile;
@@ -150,6 +151,7 @@ export interface ClassificationResult {
   streetModified: StreetModifiedEvaluation;
   modifiedProduction: ModifiedProductionEvaluation;
   preparedXp: PreparedXpEvaluation;
+  preparedCp: PreparedCpEvaluation;
   messages: string[];
 }
 
@@ -190,6 +192,16 @@ export interface PreparedXpEvaluation {
   blockers: string[];
   /** Minimum weight without driver (lbs) computed from the Section 17 XP formula. */
   minimumWeight: number | null;
+}
+
+export interface PreparedCpEvaluation {
+  status: "eligible" | "blocked" | "manual-review" | "not-listed";
+  reasons: string[];
+  blockers: string[];
+  /** Minimum weight without driver (lbs) computed from the CP flat-rate table. */
+  minimumWeight: number | null;
+  /** The matched CP listing's description, when the vehicle is specifically listed. */
+  matchedListing: string | null;
 }
 
 export interface NationalCompetitionRecord {

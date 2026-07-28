@@ -4,12 +4,14 @@ import { getVehicleMapping } from "./vehicleData";
 import { evaluateStreetModified } from "./streetModified";
 import { evaluateModifiedProduction } from "./modified";
 import { evaluatePreparedXp } from "./prepared";
+import { evaluatePreparedCP } from "./preparedCP";
 import type {
   BuildProfile,
   CategoryEvaluation,
   ClassificationResult,
   ModificationAssessment,
   ModifiedProductionEvaluation,
+  PreparedCpEvaluation,
   PreparedXpEvaluation,
   PrincipalCategory,
   RuleFinding,
@@ -92,7 +94,8 @@ function formulaEvalFor(
   category: PrincipalCategory,
   streetModifiedEval: StreetModifiedEvaluation | null,
   modifiedProductionEval: ModifiedProductionEvaluation | null,
-  preparedXpEval: PreparedXpEvaluation | null
+  preparedXpEval: PreparedXpEvaluation | null,
+  preparedCpEval: PreparedCpEvaluation | null
 ): FormulaCategoryEval | null {
   if (category === "streetModified" && streetModifiedEval) {
     return {
@@ -108,12 +111,22 @@ function formulaEvalFor(
       blockers: modifiedProductionEval.blockers
     };
   }
-  if (category === "prepared" && preparedXpEval) {
-    return {
-      status: preparedXpEval.status,
-      classId: preparedXpEval.status === "eligible" ? "xp" : undefined,
-      blockers: preparedXpEval.blockers
-    };
+  if (category === "prepared") {
+    // A vehicle specifically listed in CP is authoritative over XP's generic catch-all formula.
+    if (preparedCpEval && preparedCpEval.status !== "not-listed") {
+      return {
+        status: preparedCpEval.status,
+        classId: preparedCpEval.status === "eligible" ? "cp" : undefined,
+        blockers: preparedCpEval.blockers
+      };
+    }
+    if (preparedXpEval) {
+      return {
+        status: preparedXpEval.status,
+        classId: preparedXpEval.status === "eligible" ? "xp" : undefined,
+        blockers: preparedXpEval.blockers
+      };
+    }
   }
   return null;
 }
@@ -125,7 +138,8 @@ function evaluateCategory(
   preparation: ModificationAssessment,
   streetModifiedEval: StreetModifiedEvaluation | null,
   modifiedProductionEval: ModifiedProductionEvaluation | null = null,
-  preparedXpEval: PreparedXpEvaluation | null = null
+  preparedXpEval: PreparedXpEvaluation | null = null,
+  preparedCpEval: PreparedCpEvaluation | null = null
 ): CategoryEvaluation {
   // A specifically-listed vehicle classId (from the reviewed catalog or official Appendix A)
   // is authoritative over the generic Section 16/17/18 formula, which only fills in when no
@@ -133,7 +147,7 @@ function evaluateCategory(
   const mappedClassId = mapping ? classForCategory(mapping.classes, category) : undefined;
   const formulaEval = mappedClassId
     ? null
-    : formulaEvalFor(category, streetModifiedEval, modifiedProductionEval, preparedXpEval);
+    : formulaEvalFor(category, streetModifiedEval, modifiedProductionEval, preparedXpEval, preparedCpEval);
   const classId = mappedClassId ?? (formulaEval?.status === "eligible" ? formulaEval.classId : undefined);
   const classSpecificBlockers = classId
     ? findings.filter((finding) => {
@@ -426,8 +440,18 @@ export function classifyVehicleWithMapping(
   const streetModified = evaluateStreetModified(build, mapping);
   const modifiedProduction = evaluateModifiedProduction(build);
   const preparedXp = evaluatePreparedXp(build);
+  const preparedCp = evaluatePreparedCP(selection, build);
   const evaluations = CATEGORY_ORDER.map((category) =>
-    evaluateCategory(category, mapping, findings, preparation, streetModified, modifiedProduction, preparedXp)
+    evaluateCategory(
+      category,
+      mapping,
+      findings,
+      preparation,
+      streetModified,
+      modifiedProduction,
+      preparedXp,
+      preparedCp
+    )
   );
   const selectedPrincipal = evaluations.find((evaluation) => evaluation.status === "eligible");
   const xtremeStreet = evaluateXtremeStreet(build, mapping);
@@ -460,6 +484,7 @@ export function classifyVehicleWithMapping(
     streetModified,
     modifiedProduction,
     preparedXp,
+    preparedCp,
     messages: buildMessages(mapping, preparation, evaluations, xtremeStreet)
   };
 }
@@ -475,6 +500,7 @@ export function classifyVehicle(
   const streetModified = evaluateStreetModified(build, mapping);
   const modifiedProduction = evaluateModifiedProduction(build);
   const preparedXp = evaluatePreparedXp(build);
+  const preparedCp = evaluatePreparedCP(selection, build);
 
   if (!mapping) {
     const vehicleMessage = selection.notListed
@@ -483,7 +509,16 @@ export function classifyVehicle(
     const formulaOnlyCategories: PrincipalCategory[] = ["streetModified", "prepared", "modified"];
     const evaluations = CATEGORY_ORDER.map((category) =>
       formulaOnlyCategories.includes(category)
-        ? evaluateCategory(category, null, findings, preparation, streetModified, modifiedProduction, preparedXp)
+        ? evaluateCategory(
+            category,
+            null,
+            findings,
+            preparation,
+            streetModified,
+            modifiedProduction,
+            preparedXp,
+            preparedCp
+          )
         : {
             category,
             status: "manual-review" as const,
@@ -509,6 +544,7 @@ export function classifyVehicle(
       streetModified,
       modifiedProduction,
       preparedXp,
+      preparedCp,
       messages: selectedPrincipal
         ? [
             `The exact Appendix A vehicle placement is still missing, but the separately evaluated ${CATEGORY_SECTIONS[selectedPrincipal.category]} formula supports ` +

@@ -1242,6 +1242,35 @@ export const RULE_GROUPS: RuleGroup[] = [
     ]
   },
   {
+    field: "cpEngineConfiguration",
+    title: "Engine configuration for C Prepared (CP)",
+    help: "CP uses a flat minimum weight by engine type when this exact vehicle is CP-listed without its own stated weight.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose an engine configuration before relying on a CP result.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (CP)"
+      },
+      {
+        value: "v8",
+        label: "V8 engine",
+        description: "CP: 3000 lbs if over 5100cc, 2700 lbs if 5100cc or less (unless this vehicle has its own stated CP weight).",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (CP)"
+      },
+      {
+        value: "fourOrSixCyl",
+        label: "4-cylinder or 6-cylinder engine",
+        description: "CP: 2600 lbs flat (unless this vehicle has its own stated CP weight).",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (CP)"
+      }
+    ]
+  },
+  {
     field: "other",
     title: "Other modifications",
     help: "Use this catch-all so an unrepresented performance change cannot be silently ignored.",
@@ -1301,7 +1330,8 @@ export const DEFAULT_BUILD: BuildProfile = {
   tractionAidsPresent: "unknown",
   aeroWingsPresent: "unknown",
   activeReactiveSuspension: "unknown",
-  rearWeightBiasOver51: "unknown"
+  rearWeightBiasOver51: "unknown",
+  cpEngineConfiguration: "unknown"
 };
 
 export function findRuleOption(field: keyof BuildProfile, value: string) {

@@ -59,10 +59,10 @@ const BUILD_SECTIONS: Array<{
     ]
   },
   {
-    title: "Prepared (XP) eligibility",
-    description: "Required only when you want XP considered for a car built beyond Street Prepared.",
-    tip: "XP is Prepared's catch-all class: minimum weight is a formula based on drivetrain, engine displacement, and induction type, with adjustments for active suspension and rear weight bias.",
-    fields: ["activeReactiveSuspension", "rearWeightBiasOver51"]
+    title: "Prepared (XP/CP) eligibility",
+    description: "Required only when you want XP or CP considered for a car built beyond Street Prepared.",
+    tip: "XP is Prepared's catch-all class: minimum weight is a formula based on drivetrain, engine displacement, and induction type, with adjustments for active suspension and rear weight bias. CP is a curated list of specific vehicles with its own flat minimum weight by engine type.",
+    fields: ["activeReactiveSuspension", "rearWeightBiasOver51", "cpEngineConfiguration"]
   },
   {
     title: "Modified (DM/EM) eligibility",
