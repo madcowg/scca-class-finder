@@ -686,14 +686,17 @@ function relatedListingIsCompatible(
     return false;
   }
 
+  if (streetTokens.has("all")) return true;
+
   const qualifierStart = candidate.description.indexOf("(");
   const qualifier = (qualifierStart >= 0 ? candidate.description.slice(qualifierStart) : "")
-    .replace(/\((?:incl(?:uding)?|excl(?:uding)?)[^)]*\)/gi, "")
-    .replace(/\b(?:incl(?:uding)?|excl(?:uding)?)\.?\b.*$/gi, "")
+    .replace(/\((?:inc(?:l(?:uding)?)?|excl(?:uding)?)[^)]*\)/gi, "")
+    .replace(/\b(?:inc(?:l(?:uding)?)?|excl(?:uding)?)\.?\b.*$/gi, "")
     .replace(/\b(?:19|20)?\d{2}(?:1\/2)?\s*-\s*(?:19|20)?\d{2}\b/g, "")
     .replace(/\b(?:19|20)\d{2}\b/g, "")
     .replace(/\bLimited Prep\b/gi, "");
   const requiredTokens = identityText(qualifier)
+    .replace(/\b(\d+)\s+0l\b/g, "$1 0")
     .split(" ")
     .filter(
       (token) =>

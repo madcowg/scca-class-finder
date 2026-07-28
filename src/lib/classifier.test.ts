@@ -274,6 +274,27 @@ describe("classifyVehicle", () => {
     expect(c8Stingray?.classSources?.ssp.description).toContain("Stingray");
   });
 
+  it("links a Street Touring or Street Prepared listing to its Street counterpart despite rulebook wording differences", () => {
+    const m240i = getVehicleMapping({
+      make: "BMW",
+      model: "M240",
+      year: "2020",
+      variant: "M240i (incl. xDrive) (2017-26)"
+    });
+    expect(m240i?.classes).toEqual(expect.arrayContaining(["fs", "sst"]));
+
+    const camaroTurbo = getVehicleMapping({
+      make: "Chevrolet",
+      model: "Camaro",
+      year: "2018",
+      variant: "Camaro LS & LT (2.0L Turbo; including 1LE) (2016-24)"
+    });
+    expect(camaroTurbo?.classes).toEqual(expect.arrayContaining(["ds", "sst"]));
+
+    const emira = getVehicleMapping({ make: "Lotus", model: "Emira", year: "2024" });
+    expect(emira?.classes).toEqual(expect.arrayContaining(["ss", "sst"]));
+  });
+
   it("does not leak timeless old-generation variants into a modern model year", () => {
     const nsxVariants = getVehicleVariants("Acura", "NSX", "2017").map(
       (variant) => variant.value

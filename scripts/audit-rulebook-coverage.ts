@@ -7,7 +7,9 @@ import {
   getYears
 } from "../src/lib/vehicleData";
 
-const reachedSources = new Set<string>();
+type AppendixCategory = "street" | "streetTouring" | "streetPrepared";
+
+const reachedByClass = new Map<string, string[]>();
 let mappedSelections = 0;
 let manualSelections = 0;
 
@@ -24,82 +26,108 @@ for (const year of getYears()) {
         }
         mappedSelections += 1;
         for (const [classId, source] of Object.entries(mapping.classSources ?? {})) {
-          reachedSources.add(`${classId}\u0000${source.description}`);
+          const descriptions = reachedByClass.get(classId) ?? [];
+          descriptions.push(source.description);
+          reachedByClass.set(classId, descriptions);
         }
       }
     }
   }
 }
 
-const officialStreet = appendixAData.listings.filter(
-  (listing) =>
-    listing.category === "street" &&
-    !/^"?catch-all"?/i.test(listing.manufacturer)
-);
-const reachedStreet = officialStreet.filter((listing) =>
-  reachedSources.has(`${listing.classId}\u0000${listing.description}`)
-);
-const explicitYearStreet = officialStreet.filter((listing) => listing.yearRanges.length > 0);
-const reachedExplicitYearStreet = explicitYearStreet.filter((listing) =>
-  reachedSources.has(`${listing.classId}\u0000${listing.description}`)
-);
-const criteriaDrivenStreet = officialStreet.filter(
-  (listing) =>
-    listing.manufacturer === "General Motors" ||
-    /\bNOC\b/i.test(listing.description) ||
-    /^(?:all|.*\bmodels?)$/i.test(listing.description)
-);
-const exactStreet = officialStreet.filter(
-  (listing) => !criteriaDrivenStreet.includes(listing)
-);
-const reachedExactStreet = exactStreet.filter((listing) =>
-  reachedSources.has(`${listing.classId}\u0000${listing.description}`)
-);
-const unreachedStreet = officialStreet.filter(
-  (listing) => !reachedSources.has(`${listing.classId}\u0000${listing.description}`)
-);
-const unreachedManufacturerCounts = new Map<string, number>();
-for (const listing of unreachedStreet) {
-  unreachedManufacturerCounts.set(
-    listing.manufacturer,
-    (unreachedManufacturerCounts.get(listing.manufacturer) ?? 0) + 1
-  );
+/**
+ * A classId can be reached through several related rulebook rows that get
+ * merged into one classSources description (joined with "; "), so exact
+ * string equality against a single official row under-counts reachability.
+ * A reached row's description is always a substring of what it was merged
+ * into, so containment is the correct check here.
+ */
+function isReached(classId: string, description: string): boolean {
+  const descriptions = reachedByClass.get(classId);
+  return descriptions ? descriptions.some((entry) => entry.includes(description)) : false;
 }
-const unreachedByManufacturer = [...unreachedManufacturerCounts]
-  .map(([manufacturer, count]) => ({ manufacturer, count }))
-  .sort((left, right) => right.count - left.count);
+
+function auditCategory(category: AppendixCategory) {
+  const listings = appendixAData.listings.filter(
+    (listing) => listing.category === category && !/^"?catch-all"?/i.test(listing.manufacturer)
+  );
+  const reached = listings.filter((listing) => isReached(listing.classId, listing.description));
+  const explicitYear = listings.filter((listing) => listing.yearRanges.length > 0);
+  const reachedExplicitYear = explicitYear.filter((listing) =>
+    isReached(listing.classId, listing.description)
+  );
+  const criteriaDriven = listings.filter(
+    (listing) =>
+      listing.manufacturer === "General Motors" ||
+      /\bNOC\b/i.test(listing.description) ||
+      /^(?:all|.*\bmodels?)$/i.test(listing.description)
+  );
+  const exact = listings.filter((listing) => !criteriaDriven.includes(listing));
+  const reachedExact = exact.filter((listing) => isReached(listing.classId, listing.description));
+  const unreached = listings.filter((listing) => !isReached(listing.classId, listing.description));
+
+  const unreachedManufacturerCounts = new Map<string, number>();
+  for (const listing of unreached) {
+    unreachedManufacturerCounts.set(
+      listing.manufacturer,
+      (unreachedManufacturerCounts.get(listing.manufacturer) ?? 0) + 1
+    );
+  }
+  const unreachedByManufacturer = [...unreachedManufacturerCounts]
+    .map(([manufacturer, count]) => ({ manufacturer, count }))
+    .sort((left, right) => right.count - left.count);
+
+  return {
+    category,
+    officialListings: listings.length,
+    reachedListings: reached.length,
+    explicitYearListings: explicitYear.length,
+    reachedExplicitYearListings: reachedExplicitYear.length,
+    exactListings: exact.length,
+    reachedExactListings: reachedExact.length,
+    criteriaDrivenListings: criteriaDriven.length,
+    unreachedByManufacturer,
+    unreachedExamples: unreached.slice(0, 40).map((listing) => ({
+      classId: listing.classId,
+      manufacturer: listing.manufacturer,
+      description: listing.description,
+      yearRanges: listing.yearRanges
+    }))
+  };
+}
+
+const street = auditCategory("street");
+const streetTouring = auditCategory("streetTouring");
+const streetPrepared = auditCategory("streetPrepared");
 
 console.log(
   JSON.stringify(
     {
-      officialStreetListings: officialStreet.length,
-      reachedStreetListings: reachedStreet.length,
-      explicitYearStreetListings: explicitYearStreet.length,
-      reachedExplicitYearStreetListings: reachedExplicitYearStreet.length,
-      exactStreetListings: exactStreet.length,
-      reachedExactStreetListings: reachedExactStreet.length,
-      criteriaDrivenStreetListings: criteriaDrivenStreet.length,
       mappedSelections,
       manualSelections,
-      unreachedByManufacturer,
-      unreachedExamples: unreachedStreet.slice(0, 40).map((listing) => ({
-        classId: listing.classId,
-        manufacturer: listing.manufacturer,
-        description: listing.description,
-        yearRanges: listing.yearRanges
-      })),
+      street,
+      streetTouring,
+      streetPrepared,
       note:
-        "A rulebook listing can cover several model years; reachability means at least one exact selector choice resolves to that source."
+        "A rulebook listing can cover several model years; reachability means at least one exact selector choice resolves to that source. Street Touring and Street Prepared reachability additionally depends on identity-matching a listing back to its Street counterpart, so their thresholds are lower than Street's while that matching layer is hardened incrementally."
     },
     null,
     2
   )
 );
 
-if (reachedExactStreet.length / exactStreet.length < 0.95) {
+if (street.reachedExactListings / street.exactListings < 0.95) {
   throw new Error("Exact official Street selector reachability fell below 95%");
 }
 
-if (reachedExplicitYearStreet.length !== explicitYearStreet.length) {
+if (street.reachedExplicitYearListings !== street.explicitYearListings) {
   throw new Error("One or more explicitly year-bounded Street listings are unreachable");
+}
+
+if (streetTouring.reachedExactListings / streetTouring.exactListings < 0.7) {
+  throw new Error("Exact official Street Touring selector reachability fell below 70%");
+}
+
+if (streetPrepared.reachedExactListings / streetPrepared.exactListings < 0.55) {
+  throw new Error("Exact official Street Prepared selector reachability fell below 55%");
 }
