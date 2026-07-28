@@ -33,12 +33,17 @@ export function manufacturerMakes(manufacturer: string): string[] {
 }
 
 export function listingSegments(description: string): string[] {
-  // Split only on commas, ampersands, and em-dashes (used for descriptive appositions
-  // like "A-body – Valiant, Dart, ..."). A plain hyphen is NOT a separator here --
-  // it's part of many model names themselves (MX-5, TR-4, S-10), and splitting on it
-  // would break their identity into unmatchable fragments.
+  // Strip every parenthetical qualifier (year ranges, "(all)", "(AWD)", etc.) --
+  // not just from the first one onward, since some listings have a qualifier
+  // attached to an earlier name before an "&"/"," introduces another name, e.g.
+  // "Impreza (AWD) & WRX (all)". Truncating at the first "(" would silently
+  // lose every segment after it. Then split only on commas, ampersands, and
+  // em-dashes (used for descriptive appositions like "A-body – Valiant, Dart,
+  // ..."). A plain hyphen is NOT a separator here -- it's part of many model
+  // names themselves (MX-5, TR-4, S-10), and splitting on it would break their
+  // identity into unmatchable fragments.
   return description
-    .split("(")[0]
+    .replace(/\([^)]*\)/g, " ")
     .split(/[,&–]/)
     .map((s) => normalizeWords(s))
     .filter((s) => s.length > 1);

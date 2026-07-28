@@ -7,6 +7,7 @@ import { evaluatePreparedXp } from "./prepared";
 import { evaluatePreparedCP } from "./preparedCP";
 import { evaluatePreparedDP } from "./preparedDP";
 import { evaluatePreparedEP } from "./preparedEP";
+import { evaluatePreparedFP } from "./preparedFP";
 import type {
   BuildProfile,
   CategoryEvaluation,
@@ -16,6 +17,7 @@ import type {
   PreparedCpEvaluation,
   PreparedDpEvaluation,
   PreparedEpEvaluation,
+  PreparedFpEvaluation,
   PreparedXpEvaluation,
   PrincipalCategory,
   RuleFinding,
@@ -101,7 +103,8 @@ function formulaEvalFor(
   preparedXpEval: PreparedXpEvaluation | null,
   preparedCpEval: PreparedCpEvaluation | null,
   preparedDpEval: PreparedDpEvaluation | null,
-  preparedEpEval: PreparedEpEvaluation | null
+  preparedEpEval: PreparedEpEvaluation | null,
+  preparedFpEval: PreparedFpEvaluation | null
 ): FormulaCategoryEval | null {
   if (category === "streetModified" && streetModifiedEval) {
     return {
@@ -141,6 +144,13 @@ function formulaEvalFor(
         blockers: preparedEpEval.blockers
       };
     }
+    if (preparedFpEval && preparedFpEval.status !== "not-listed") {
+      return {
+        status: preparedFpEval.status,
+        classId: preparedFpEval.status === "eligible" ? "fp" : undefined,
+        blockers: preparedFpEval.blockers
+      };
+    }
     if (preparedXpEval) {
       return {
         status: preparedXpEval.status,
@@ -162,7 +172,8 @@ function evaluateCategory(
   preparedXpEval: PreparedXpEvaluation | null = null,
   preparedCpEval: PreparedCpEvaluation | null = null,
   preparedDpEval: PreparedDpEvaluation | null = null,
-  preparedEpEval: PreparedEpEvaluation | null = null
+  preparedEpEval: PreparedEpEvaluation | null = null,
+  preparedFpEval: PreparedFpEvaluation | null = null
 ): CategoryEvaluation {
   // A specifically-listed vehicle classId (from the reviewed catalog or official Appendix A)
   // is authoritative over the generic Section 16/17/18 formula, which only fills in when no
@@ -177,7 +188,8 @@ function evaluateCategory(
         preparedXpEval,
         preparedCpEval,
         preparedDpEval,
-        preparedEpEval
+        preparedEpEval,
+        preparedFpEval
       );
   const classId = mappedClassId ?? (formulaEval?.status === "eligible" ? formulaEval.classId : undefined);
   const classSpecificBlockers = classId
@@ -474,6 +486,7 @@ export function classifyVehicleWithMapping(
   const preparedCp = evaluatePreparedCP(selection, build);
   const preparedDp = evaluatePreparedDP(selection, build);
   const preparedEp = evaluatePreparedEP(selection, build);
+  const preparedFp = evaluatePreparedFP(selection, build);
   const evaluations = CATEGORY_ORDER.map((category) =>
     evaluateCategory(
       category,
@@ -485,7 +498,8 @@ export function classifyVehicleWithMapping(
       preparedXp,
       preparedCp,
       preparedDp,
-      preparedEp
+      preparedEp,
+      preparedFp
     )
   );
   const selectedPrincipal = evaluations.find((evaluation) => evaluation.status === "eligible");
@@ -522,6 +536,7 @@ export function classifyVehicleWithMapping(
     preparedCp,
     preparedDp,
     preparedEp,
+    preparedFp,
     messages: buildMessages(mapping, preparation, evaluations, xtremeStreet)
   };
 }
@@ -540,6 +555,7 @@ export function classifyVehicle(
   const preparedCp = evaluatePreparedCP(selection, build);
   const preparedDp = evaluatePreparedDP(selection, build);
   const preparedEp = evaluatePreparedEP(selection, build);
+  const preparedFp = evaluatePreparedFP(selection, build);
 
   if (!mapping) {
     const vehicleMessage = selection.notListed
@@ -558,7 +574,8 @@ export function classifyVehicle(
             preparedXp,
             preparedCp,
             preparedDp,
-            preparedEp
+            preparedEp,
+            preparedFp
           )
         : {
             category,
@@ -588,6 +605,7 @@ export function classifyVehicle(
       preparedCp,
       preparedDp,
       preparedEp,
+      preparedFp,
       messages: selectedPrincipal
         ? [
             `The exact Appendix A vehicle placement is still missing, but the separately evaluated ${CATEGORY_SECTIONS[selectedPrincipal.category]} formula supports ` +

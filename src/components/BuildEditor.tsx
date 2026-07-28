@@ -59,9 +59,9 @@ const BUILD_SECTIONS: Array<{
     ]
   },
   {
-    title: "Prepared (XP/CP/DP/EP) eligibility",
-    description: "Required only when you want XP, CP, DP, or EP considered for a car built beyond Street Prepared.",
-    tip: "XP is Prepared's catch-all class: minimum weight is a formula based on drivetrain, engine displacement, and induction type. CP, DP, and EP are curated lists of specific vehicles -- CP uses a flat minimum weight by engine type; DP and EP use a displacement formula that also depends on valve count per cylinder (EP additionally uses a different rate for forced induction).",
+    title: "Prepared (XP/CP/DP/EP/FP) eligibility",
+    description: "Required only when you want XP, CP, DP, EP, or FP considered for a car built beyond Street Prepared.",
+    tip: "XP is Prepared's catch-all class. CP, DP, EP, and FP are curated lists of specific vehicles, each with their own weight formula -- CP is a flat rate by engine type; DP, EP, and FP use displacement-based formulas that also depend on valve count, induction type, and (for FP) drivetrain and rotary engine family.",
     fields: [
       "activeReactiveSuspension",
       "rearWeightBiasOver51",
@@ -69,7 +69,9 @@ const BUILD_SECTIONS: Array<{
       "valveCountPerCylinder",
       "variableCamTiming",
       "wheelWidthCategory",
-      "alternateEngineAllowance"
+      "alternateEngineAllowance",
+      "rotaryEngineFamily",
+      "peripheralPortRotary"
     ]
   },
   {

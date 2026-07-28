@@ -1394,6 +1394,71 @@ export const RULE_GROUPS: RuleGroup[] = [
     ]
   },
   {
+    field: "rotaryEngineFamily",
+    title: "Rotary engine family (FP)",
+    help: "FP classifies rotary engines by a fixed specified displacement per engine family rather than actual displacement.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure / not applicable",
+        description: "Only needed when induction type is rotary.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (FP)"
+      },
+      {
+        value: "12a",
+        label: "Mazda 12A",
+        description: "Specified displacement: 2292 cc.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (FP)"
+      },
+      {
+        value: "13b",
+        label: "Mazda 13B",
+        description: "Specified displacement: 2616 cc.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (FP)"
+      },
+      {
+        value: "renesis",
+        label: "Mazda Renesis (RX-8)",
+        description: "Specified displacement: 2616 cc.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (FP)"
+      }
+    ]
+  },
+  {
+    field: "peripheralPortRotary",
+    title: "Peripheral-port rotary porting (FP)",
+    help: "FP adds a small per-cc weight penalty for peripheral-port rotary engines; only some FP-listed rotary vehicles allow it.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure / not applicable",
+        description: "Only needed for a rotary engine.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (FP)"
+      },
+      {
+        value: "yes",
+        label: "Yes, peripheral (or bridge) porting used",
+        description: "Adds 0.05 lbs per cc of specified displacement; only legal on FP listings that state it is allowed.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (FP)"
+      },
+      {
+        value: "no",
+        label: "No",
+        description: "No peripheral-port weight adjustment applies.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A (FP)"
+      }
+    ]
+  },
+  {
     field: "other",
     title: "Other modifications",
     help: "Use this catch-all so an unrepresented performance change cannot be silently ignored.",
@@ -1458,7 +1523,9 @@ export const DEFAULT_BUILD: BuildProfile = {
   valveCountPerCylinder: "unknown",
   variableCamTiming: "unknown",
   wheelWidthCategory: "unknown",
-  alternateEngineAllowance: "unknown"
+  alternateEngineAllowance: "unknown",
+  rotaryEngineFamily: "unknown",
+  peripheralPortRotary: "unknown"
 };
 
 export function findRuleOption(field: keyof BuildProfile, value: string) {

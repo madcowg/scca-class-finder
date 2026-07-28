@@ -84,6 +84,8 @@ export type BuildProfile = {
   variableCamTiming: string;
   wheelWidthCategory: string;
   alternateEngineAllowance: string;
+  rotaryEngineFamily: string;
+  peripheralPortRotary: string;
 };
 
 export type BuildField = keyof BuildProfile;
@@ -158,6 +160,7 @@ export interface ClassificationResult {
   preparedCp: PreparedCpEvaluation;
   preparedDp: PreparedDpEvaluation;
   preparedEp: PreparedEpEvaluation;
+  preparedFp: PreparedFpEvaluation;
   messages: string[];
 }
 
@@ -227,6 +230,16 @@ export interface PreparedEpEvaluation {
   /** Minimum weight without driver (lbs) computed from the EP displacement formula. */
   minimumWeight: number | null;
   /** The matched EP listing's description, when the vehicle is specifically listed. */
+  matchedListing: string | null;
+}
+
+export interface PreparedFpEvaluation {
+  status: "eligible" | "blocked" | "manual-review" | "not-listed";
+  reasons: string[];
+  blockers: string[];
+  /** Minimum weight without driver (lbs) computed from the FP displacement formula. */
+  minimumWeight: number | null;
+  /** The matched FP listing's description, when the vehicle is specifically listed. */
   matchedListing: string | null;
 }
 
