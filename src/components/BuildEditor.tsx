@@ -57,6 +57,18 @@ const BUILD_SECTIONS: Array<{
       "tireWidthCategory",
       "solidAxleRwd"
     ]
+  },
+  {
+    title: "Prepared (XP) eligibility",
+    description: "Required only when you want XP considered for a car built beyond Street Prepared.",
+    tip: "XP is Prepared's catch-all class: minimum weight is a formula based on drivetrain, engine displacement, and induction type, with adjustments for active suspension and rear weight bias.",
+    fields: ["activeReactiveSuspension", "rearWeightBiasOver51"]
+  },
+  {
+    title: "Modified (DM/EM) eligibility",
+    description: "Required only when you want DM or EM considered for a production-based car built beyond Prepared.",
+    tip: "DM/EM use a flat minimum weight with the driver based on engine displacement, with additions for AWD, traction aids, and wings. AM/BM/CM/FM are dedicated race-chassis classes a modified production car cannot enter.",
+    fields: ["tractionAidsPresent", "aeroWingsPresent", "measuredWeightWithDriverModified"]
   }
 ];
 

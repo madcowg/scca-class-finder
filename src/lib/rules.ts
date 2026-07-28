@@ -999,6 +999,131 @@ export const RULE_GROUPS: RuleGroup[] = [
     ]
   },
   {
+    field: "measuredWeightWithDriverModified",
+    title: "Measured competition weight with driver (lbs) for Modified",
+    help: "DM/EM minimum weights are flat figures measured with the driver, unlike Street Modified's without-driver convention.",
+    principalRelevant: false,
+    inputType: "number",
+    numberPlaceholder: "e.g. 1700",
+    options: []
+  },
+  {
+    field: "tractionAidsPresent",
+    title: "Traction control, ABS, or stability control",
+    help: "DM/EM permit full TCS/ABS/SCS with a 100 lb weight addition.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose an answer before relying on a DM/EM result.",
+        allowedCategories: ALL,
+        section: "18 - Appendix A"
+      },
+      {
+        value: "yes",
+        label: "Yes",
+        description: "Adds 100 lbs to the DM/EM minimum weight.",
+        allowedCategories: ALL,
+        section: "18 - Appendix A"
+      },
+      {
+        value: "no",
+        label: "No",
+        description: "No traction-aid weight adjustment applies.",
+        allowedCategories: ALL,
+        section: "18 - Appendix A"
+      }
+    ]
+  },
+  {
+    field: "aeroWingsPresent",
+    title: "Wing or Modified-class aerodynamic aid",
+    help: "DM/EM add 200 lbs when a wing or similar aerodynamic device is fitted.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose an answer before relying on a DM/EM result.",
+        allowedCategories: ALL,
+        section: "18 - Appendix A"
+      },
+      {
+        value: "yes",
+        label: "Yes",
+        description: "Adds 200 lbs to the DM/EM minimum weight.",
+        allowedCategories: ALL,
+        section: "18 - Appendix A"
+      },
+      {
+        value: "no",
+        label: "No",
+        description: "No wing/aero weight adjustment applies.",
+        allowedCategories: ALL,
+        section: "18 - Appendix A"
+      }
+    ]
+  },
+  {
+    field: "activeReactiveSuspension",
+    title: "Active/reactive suspension system (Prepared)",
+    help: "XP adds 100 lbs for an active/reactive suspension system.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose an answer before relying on an XP result.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A"
+      },
+      {
+        value: "yes",
+        label: "Yes",
+        description: "Adds 100 lbs to the XP minimum weight.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A"
+      },
+      {
+        value: "no",
+        label: "No",
+        description: "No active-suspension weight adjustment applies.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A"
+      }
+    ]
+  },
+  {
+    field: "rearWeightBiasOver51",
+    title: "More than 51% of weight on the rear axle (Prepared)",
+    help: "XP adds 20 lbs per liter of classified displacement when rear weight bias exceeds 51%.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose an answer before relying on an XP result.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A"
+      },
+      {
+        value: "yes",
+        label: "Yes",
+        description: "Adds 20 lbs per liter of classified displacement to the XP minimum weight.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A"
+      },
+      {
+        value: "no",
+        label: "No",
+        description: "No rear-weight-bias adjustment applies.",
+        allowedCategories: ALL,
+        section: "17 - Appendix A"
+      }
+    ]
+  },
+  {
     field: "other",
     title: "Other modifications",
     help: "Use this catch-all so an unrepresented performance change cannot be silently ignored.",
@@ -1051,7 +1176,12 @@ export const DEFAULT_BUILD: BuildProfile = {
   inductionType: "unknown",
   measuredWeightNoDriver: "",
   tireWidthCategory: "unknown",
-  solidAxleRwd: "unknown"
+  solidAxleRwd: "unknown",
+  measuredWeightWithDriverModified: "",
+  tractionAidsPresent: "unknown",
+  aeroWingsPresent: "unknown",
+  activeReactiveSuspension: "unknown",
+  rearWeightBiasOver51: "unknown"
 };
 
 export function findRuleOption(field: keyof BuildProfile, value: string) {

@@ -1,12 +1,16 @@
-import { CATEGORY_ORDER, SUPPLEMENTAL_CLASS_IDS, classForCategory } from "./classMetadata";
+import { CATEGORY_ORDER, CATEGORY_SECTIONS, SUPPLEMENTAL_CLASS_IDS, classForCategory } from "./classMetadata";
 import { RULE_GROUPS, findRuleOption } from "./rules";
 import { getVehicleMapping } from "./vehicleData";
 import { evaluateStreetModified } from "./streetModified";
+import { evaluateModifiedProduction } from "./modified";
+import { evaluatePreparedXp } from "./prepared";
 import type {
   BuildProfile,
   CategoryEvaluation,
   ClassificationResult,
   ModificationAssessment,
+  ModifiedProductionEvaluation,
+  PreparedXpEvaluation,
   PrincipalCategory,
   RuleFinding,
   StreetModifiedEvaluation,
@@ -78,21 +82,59 @@ function assessModifications(findings: RuleFinding[]): ModificationAssessment {
   };
 }
 
+interface FormulaCategoryEval {
+  status: "eligible" | "blocked" | "manual-review";
+  classId?: string;
+  blockers: string[];
+}
+
+function formulaEvalFor(
+  category: PrincipalCategory,
+  streetModifiedEval: StreetModifiedEvaluation | null,
+  modifiedProductionEval: ModifiedProductionEvaluation | null,
+  preparedXpEval: PreparedXpEvaluation | null
+): FormulaCategoryEval | null {
+  if (category === "streetModified" && streetModifiedEval) {
+    return {
+      status: streetModifiedEval.status,
+      classId: streetModifiedEval.recommendedClass ?? undefined,
+      blockers: streetModifiedEval.blockers
+    };
+  }
+  if (category === "modified" && modifiedProductionEval) {
+    return {
+      status: modifiedProductionEval.status,
+      classId: modifiedProductionEval.classId ?? undefined,
+      blockers: modifiedProductionEval.blockers
+    };
+  }
+  if (category === "prepared" && preparedXpEval) {
+    return {
+      status: preparedXpEval.status,
+      classId: preparedXpEval.status === "eligible" ? "xp" : undefined,
+      blockers: preparedXpEval.blockers
+    };
+  }
+  return null;
+}
+
 function evaluateCategory(
   category: PrincipalCategory,
   mapping: VehicleMapping | null,
   findings: RuleFinding[],
   preparation: ModificationAssessment,
-  streetModifiedEval: StreetModifiedEvaluation | null
+  streetModifiedEval: StreetModifiedEvaluation | null,
+  modifiedProductionEval: ModifiedProductionEvaluation | null = null,
+  preparedXpEval: PreparedXpEvaluation | null = null
 ): CategoryEvaluation {
-  const isStreetModified = category === "streetModified";
-  const classId = isStreetModified
-    ? streetModifiedEval?.status === "eligible"
-      ? streetModifiedEval.recommendedClass ?? undefined
-      : undefined
-    : mapping
-      ? classForCategory(mapping.classes, category)
-      : undefined;
+  // A specifically-listed vehicle classId (from the reviewed catalog or official Appendix A)
+  // is authoritative over the generic Section 16/17/18 formula, which only fills in when no
+  // vehicle-specific placement exists for that category.
+  const mappedClassId = mapping ? classForCategory(mapping.classes, category) : undefined;
+  const formulaEval = mappedClassId
+    ? null
+    : formulaEvalFor(category, streetModifiedEval, modifiedProductionEval, preparedXpEval);
+  const classId = mappedClassId ?? (formulaEval?.status === "eligible" ? formulaEval.classId : undefined);
   const classSpecificBlockers = classId
     ? findings.filter((finding) => {
         const allowedClasses = finding.classConstraints?.[category];
@@ -130,16 +172,20 @@ function evaluateCategory(
     };
   }
 
-  if (isStreetModified && streetModifiedEval && streetModifiedEval.status !== "eligible") {
+  if (formulaEval && formulaEval.status !== "eligible") {
+    const fallbackNote =
+      category === "streetModified"
+        ? "Section 16 SSM/SM/SMF eligibility could not be established from the current inputs."
+        : category === "modified"
+          ? "Section 18 DM/EM eligibility could not be established from the current inputs."
+          : "Section 17 XP eligibility could not be established from the current inputs.";
     return {
       category,
-      status: streetModifiedEval.status === "manual-review" ? "manual-review" : "blocked",
+      status: formulaEval.status === "manual-review" ? "manual-review" : "blocked",
       blockers: [],
       preparationLegal: preparation.legalCategories.includes(category),
       mappingAvailable: false,
-      note:
-        streetModifiedEval.blockers.join(" ") ||
-        "Section 16 SSM/SM/SMF eligibility could not be established from the current inputs."
+      note: formulaEval.blockers.join(" ") || fallbackNote
     };
   }
 
@@ -378,8 +424,10 @@ export function classifyVehicleWithMapping(
   const findings = evaluateFindings(build);
   const preparation = assessModifications(findings);
   const streetModified = evaluateStreetModified(build, mapping);
+  const modifiedProduction = evaluateModifiedProduction(build);
+  const preparedXp = evaluatePreparedXp(build);
   const evaluations = CATEGORY_ORDER.map((category) =>
-    evaluateCategory(category, mapping, findings, preparation, streetModified)
+    evaluateCategory(category, mapping, findings, preparation, streetModified, modifiedProduction, preparedXp)
   );
   const selectedPrincipal = evaluations.find((evaluation) => evaluation.status === "eligible");
   const xtremeStreet = evaluateXtremeStreet(build, mapping);
@@ -410,6 +458,8 @@ export function classifyVehicleWithMapping(
     supplementalClasses,
     xtremeStreet,
     streetModified,
+    modifiedProduction,
+    preparedXp,
     messages: buildMessages(mapping, preparation, evaluations, xtremeStreet)
   };
 }
@@ -423,49 +473,51 @@ export function classifyVehicle(
   const mapping = getVehicleMapping(selection);
   const xtremeStreet = evaluateXtremeStreet(build, mapping);
   const streetModified = evaluateStreetModified(build, mapping);
+  const modifiedProduction = evaluateModifiedProduction(build);
+  const preparedXp = evaluatePreparedXp(build);
 
   if (!mapping) {
     const vehicleMessage = selection.notListed
       ? "This vehicle is outside the reviewed catalog. Send the exact year, make, model, and package details to a regional chair instead of guessing."
       : "This exact year, model, and submodel does not yet have a reviewed first-party placement in this app. Do not guess from a similar trim; send it for manual review.";
+    const formulaOnlyCategories: PrincipalCategory[] = ["streetModified", "prepared", "modified"];
+    const evaluations = CATEGORY_ORDER.map((category) =>
+      formulaOnlyCategories.includes(category)
+        ? evaluateCategory(category, null, findings, preparation, streetModified, modifiedProduction, preparedXp)
+        : {
+            category,
+            status: "manual-review" as const,
+            blockers: preparation.manualFindings,
+            preparationLegal: preparation.legalCategories.includes(category),
+            mappingAvailable: false,
+            note: vehicleMessage
+          }
+    );
+    const selectedPrincipal = evaluations.find((evaluation) => evaluation.status === "eligible");
     const xtremeEligible = xtremeStreet.status === "eligible" && xtremeStreet.recommendedClass;
-    const streetModifiedEligible = streetModified.status === "eligible" && streetModified.recommendedClass;
-    const selectedClass = xtremeEligible
-      ? xtremeStreet.recommendedClass
-      : streetModifiedEligible
-        ? streetModified.recommendedClass
-        : null;
+    const selectedClass = selectedPrincipal?.classId ?? (xtremeEligible ? xtremeStreet.recommendedClass : null);
     return {
       mapping: null,
-      selectedCategory: streetModifiedEligible && !xtremeEligible ? "streetModified" : null,
-      selectedClass,
+      selectedCategory: selectedPrincipal?.category ?? null,
+      selectedClass: selectedClass ?? null,
       confidence: selectedClass ? "limited" : "manual-review",
-      evaluations: CATEGORY_ORDER.map((category) =>
-        category === "streetModified"
-          ? evaluateCategory(category, null, findings, preparation, streetModified)
-          : {
-              category,
-              status: "manual-review",
-              blockers: preparation.manualFindings,
-              preparationLegal: preparation.legalCategories.includes(category),
-              mappingAvailable: false,
-              note: vehicleMessage
-            }
-      ),
+      evaluations,
       findings,
       preparation,
       supplementalClasses: [...xtremeStreet.eligibleClasses],
       xtremeStreet,
       streetModified,
-      messages: xtremeEligible
+      modifiedProduction,
+      preparedXp,
+      messages: selectedPrincipal
         ? [
-            "The exact Appendix A vehicle placement is still missing, but the separately evaluated Section 21 path supports " +
-              `${xtremeStreet.recommendedClass?.toUpperCase()} independent of that placement.`
+            `The exact Appendix A vehicle placement is still missing, but the separately evaluated ${CATEGORY_SECTIONS[selectedPrincipal.category]} formula supports ` +
+              `${selectedPrincipal.classId?.toUpperCase()} independent of that placement.`
           ]
-        : streetModifiedEligible
+        : xtremeEligible
           ? [
-              "The exact Appendix A vehicle placement is still missing, but the separately evaluated Section 16 body/weight formula supports " +
-                `${streetModified.recommendedClass?.toUpperCase()} independent of that placement.`
+              "The exact Appendix A vehicle placement is still missing, but the separately evaluated Section 21 path supports " +
+                `${xtremeStreet.recommendedClass?.toUpperCase()} independent of that placement.`
             ]
           : [
               vehicleMessage,

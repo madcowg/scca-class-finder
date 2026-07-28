@@ -74,6 +74,11 @@ export type BuildProfile = {
   measuredWeightNoDriver: string;
   tireWidthCategory: string;
   solidAxleRwd: string;
+  measuredWeightWithDriverModified: string;
+  tractionAidsPresent: string;
+  aeroWingsPresent: string;
+  activeReactiveSuspension: string;
+  rearWeightBiasOver51: string;
 };
 
 export type BuildField = keyof BuildProfile;
@@ -141,6 +146,8 @@ export interface ClassificationResult {
   supplementalClasses: string[];
   xtremeStreet: XtremeStreetEvaluation;
   streetModified: StreetModifiedEvaluation;
+  modifiedProduction: ModifiedProductionEvaluation;
+  preparedXp: PreparedXpEvaluation;
   messages: string[];
 }
 
@@ -162,6 +169,25 @@ export interface XtremeStreetEvaluation {
   recommendedClass: "xa" | "xb" | null;
   reasons: string[];
   blockers: string[];
+}
+
+export type ModifiedProductionClassId = "dm" | "em";
+
+export interface ModifiedProductionEvaluation {
+  status: "eligible" | "blocked" | "manual-review";
+  classId: ModifiedProductionClassId | null;
+  reasons: string[];
+  blockers: string[];
+  /** Minimum weight with driver (lbs) required for the evaluated class. */
+  minimumWeight: number | null;
+}
+
+export interface PreparedXpEvaluation {
+  status: "eligible" | "blocked" | "manual-review";
+  reasons: string[];
+  blockers: string[];
+  /** Minimum weight without driver (lbs) computed from the Section 17 XP formula. */
+  minimumWeight: number | null;
 }
 
 export interface NationalCompetitionRecord {

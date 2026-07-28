@@ -8,7 +8,7 @@ import { CURRENT_APPENDIX_A_STOCK_CASES } from "./verifiedCases";
 const miata = { make: "Mazda", model: "MX-5 Miata", year: "2016" };
 const reviewedMiataMapping: VehicleMapping = {
   selection: miata,
-  classes: ["cs", "ast", "dsp", "ssm", "dp"],
+  classes: ["cs", "ast", "dsp"],
   source: "2026-current-override",
   coverage: "full-mapping",
   sourceNote: "Test fixture representing a fully reviewed first-party placement."
