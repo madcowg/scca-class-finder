@@ -84,13 +84,27 @@ describe("classifyVehicle", () => {
     );
   });
 
-  it("moves an engine-swap build to Street Modified when listed", () => {
-    const result = classifyReviewedMiata({
+  it("moves an engine-swap build to Street Modified when the Section 16 body/weight facts are provided", () => {
+    const withoutSmFacts = classifyReviewedMiata({
       ...DEFAULT_BUILD,
       engine: "swapOrAddedInduction"
     });
+    expect(withoutSmFacts.selectedCategory).not.toBe("streetModified");
+
+    const result = classifyReviewedMiata({
+      ...DEFAULT_BUILD,
+      engine: "swapOrAddedInduction",
+      drivetrainLayout: "rwd",
+      bodyConfiguration: "twoSeat",
+      inductionType: "naturallyAspirated",
+      engineDisplacementLiters: "2.0",
+      measuredWeightNoDriver: "2200",
+      tireWidthCategory: "over275",
+      solidAxleRwd: "no"
+    });
     expect(result.selectedCategory).toBe("streetModified");
     expect(result.selectedClass).toBe("ssm");
+    expect(result.streetModified.minimumWeights.ssm).toBe(2000);
   });
 
   it("requires manual review for spring attachment-point changes", () => {

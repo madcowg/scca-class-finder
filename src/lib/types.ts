@@ -68,6 +68,12 @@ export type BuildProfile = {
   xtremePowertrain: string;
   competitionWeight: string;
   roadEquipment: string;
+  bodyConfiguration: string;
+  engineDisplacementLiters: string;
+  inductionType: string;
+  measuredWeightNoDriver: string;
+  tireWidthCategory: string;
+  solidAxleRwd: string;
 };
 
 export type BuildField = keyof BuildProfile;
@@ -88,6 +94,9 @@ export interface RuleGroup {
   help: string;
   options: RuleOption[];
   principalRelevant?: boolean;
+  /** "number" renders a free-text numeric input instead of the options dropdown. */
+  inputType?: "select" | "number";
+  numberPlaceholder?: string;
 }
 
 export interface RuleFinding {
@@ -131,7 +140,20 @@ export interface ClassificationResult {
   preparation: ModificationAssessment;
   supplementalClasses: string[];
   xtremeStreet: XtremeStreetEvaluation;
+  streetModified: StreetModifiedEvaluation;
   messages: string[];
+}
+
+export type StreetModifiedClassId = "ssm" | "sm" | "smf";
+
+export interface StreetModifiedEvaluation {
+  status: "eligible" | "blocked" | "manual-review";
+  eligibleClasses: StreetModifiedClassId[];
+  recommendedClass: StreetModifiedClassId | null;
+  reasons: string[];
+  blockers: string[];
+  /** Calculated minimum weight (without driver, lbs) for each class that was evaluated. */
+  minimumWeights: Partial<Record<StreetModifiedClassId, number>>;
 }
 
 export interface XtremeStreetEvaluation {

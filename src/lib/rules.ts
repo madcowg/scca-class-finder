@@ -851,6 +851,154 @@ export const RULE_GROUPS: RuleGroup[] = [
     ]
   },
   {
+    field: "bodyConfiguration",
+    title: "Body configuration for Street Modified",
+    help: "Section 16 places SSM/SM/SMF eligibility on body/seating configuration, not a per-model list.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose a body configuration before relying on an SSM/SM/SMF result.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "twoSeat",
+        label: "2-seat car (e.g. Miata, Boxster, Corvette)",
+        description: "2-seat cars generally follow the SSM eligibility path.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "sedanCoupeFourSeat",
+        label: "Sedan/coupe originally equipped with 4 seats and 4 factory seat belts",
+        description: "Sedans and coupes with the original 4-seat/4-belt configuration follow the SM eligibility path.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "pickup",
+        label: "Pickup truck",
+        description: "Pickup trucks follow the SM eligibility path (subject to the Section 3.1 stability screen).",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      }
+    ]
+  },
+  {
+    field: "inductionType",
+    title: "Induction type for Street Modified",
+    help: "Forced-induction SM/SSM/SMF engines classify at a higher equivalent displacement than actual.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose an induction type before relying on an SSM/SM/SMF result.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "naturallyAspirated",
+        label: "Naturally aspirated",
+        description: "Classified at actual piston displacement.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "forcedInduction",
+        label: "Turbocharged or supercharged",
+        description: "SM/SSM add 1.4L to actual displacement; SMF adds 1.0L.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "rotary",
+        label: "Rotary (Wankel)",
+        description: "Rotary displacement equivalence needs rotor count and chamber-volume figures that this profile does not collect.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      }
+    ]
+  },
+  {
+    field: "engineDisplacementLiters",
+    title: "Actual engine displacement (liters)",
+    help: "Used with induction type to compute the SSM/SM/SMF minimum weight formula.",
+    principalRelevant: false,
+    inputType: "number",
+    numberPlaceholder: "e.g. 2.0",
+    options: []
+  },
+  {
+    field: "measuredWeightNoDriver",
+    title: "Measured competition weight without driver (lbs)",
+    help: "Section 16 minimum weights are measured without the driver, unlike the Xtreme Street competition-weight bands.",
+    principalRelevant: false,
+    inputType: "number",
+    numberPlaceholder: "e.g. 2750",
+    options: []
+  },
+  {
+    field: "tireWidthCategory",
+    title: "Widest competition tire",
+    help: "SSM and SM give a 200 lb weight break for tires of 275 mm or less; SMF does not.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Choose a tire width before relying on an SSM/SM/SMF result.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "275orLess",
+        label: "275 mm or narrower",
+        description: "SSM and SM reduce the minimum weight by 200 lbs for tires this width or narrower.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "over275",
+        label: "Wider than 275 mm",
+        description: "No tire-width weight break applies.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      }
+    ]
+  },
+  {
+    field: "solidAxleRwd",
+    title: "Solid (live) rear axle",
+    help: "SM gives a 25 lb-per-liter weight break for solid-axle RWD cars.",
+    principalRelevant: false,
+    options: [
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Only relevant for RWD cars evaluating SM.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "yes",
+        label: "Yes, solid rear axle",
+        description: "Reduces the SM minimum weight by 25 lbs per liter of classified displacement.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      },
+      {
+        value: "no",
+        label: "No, independent rear suspension",
+        description: "No solid-axle weight break applies.",
+        allowedCategories: ALL,
+        section: "16 - Appendix A"
+      }
+    ]
+  },
+  {
     field: "other",
     title: "Other modifications",
     help: "Use this catch-all so an unrepresented performance change cannot be silently ignored.",
@@ -897,7 +1045,13 @@ export const DEFAULT_BUILD: BuildProfile = {
   drivetrainLayout: "unknown",
   xtremePowertrain: "unknown",
   competitionWeight: "unknown",
-  roadEquipment: "complete"
+  roadEquipment: "complete",
+  bodyConfiguration: "unknown",
+  engineDisplacementLiters: "",
+  inductionType: "unknown",
+  measuredWeightNoDriver: "",
+  tireWidthCategory: "unknown",
+  solidAxleRwd: "unknown"
 };
 
 export function findRuleOption(field: keyof BuildProfile, value: string) {

@@ -1,6 +1,7 @@
 import { CATEGORY_ORDER, SUPPLEMENTAL_CLASS_IDS, classForCategory } from "./classMetadata";
 import { RULE_GROUPS, findRuleOption } from "./rules";
 import { getVehicleMapping } from "./vehicleData";
+import { evaluateStreetModified } from "./streetModified";
 import type {
   BuildProfile,
   CategoryEvaluation,
@@ -8,6 +9,7 @@ import type {
   ModificationAssessment,
   PrincipalCategory,
   RuleFinding,
+  StreetModifiedEvaluation,
   VehicleMapping,
   VehicleSelection,
   XtremeStreetEvaluation
@@ -78,11 +80,19 @@ function assessModifications(findings: RuleFinding[]): ModificationAssessment {
 
 function evaluateCategory(
   category: PrincipalCategory,
-  mapping: VehicleMapping,
+  mapping: VehicleMapping | null,
   findings: RuleFinding[],
-  preparation: ModificationAssessment
+  preparation: ModificationAssessment,
+  streetModifiedEval: StreetModifiedEvaluation | null
 ): CategoryEvaluation {
-  const classId = classForCategory(mapping.classes, category);
+  const isStreetModified = category === "streetModified";
+  const classId = isStreetModified
+    ? streetModifiedEval?.status === "eligible"
+      ? streetModifiedEval.recommendedClass ?? undefined
+      : undefined
+    : mapping
+      ? classForCategory(mapping.classes, category)
+      : undefined;
   const classSpecificBlockers = classId
     ? findings.filter((finding) => {
         const allowedClasses = finding.classConstraints?.[category];
@@ -117,6 +127,19 @@ function evaluateCategory(
       blockers,
       preparationLegal: false,
       mappingAvailable
+    };
+  }
+
+  if (isStreetModified && streetModifiedEval && streetModifiedEval.status !== "eligible") {
+    return {
+      category,
+      status: streetModifiedEval.status === "manual-review" ? "manual-review" : "blocked",
+      blockers: [],
+      preparationLegal: preparation.legalCategories.includes(category),
+      mappingAvailable: false,
+      note:
+        streetModifiedEval.blockers.join(" ") ||
+        "Section 16 SSM/SM/SMF eligibility could not be established from the current inputs."
     };
   }
 
@@ -354,8 +377,9 @@ export function classifyVehicleWithMapping(
 ): ClassificationResult {
   const findings = evaluateFindings(build);
   const preparation = assessModifications(findings);
+  const streetModified = evaluateStreetModified(build, mapping);
   const evaluations = CATEGORY_ORDER.map((category) =>
-    evaluateCategory(category, mapping, findings, preparation)
+    evaluateCategory(category, mapping, findings, preparation, streetModified)
   );
   const selectedPrincipal = evaluations.find((evaluation) => evaluation.status === "eligible");
   const xtremeStreet = evaluateXtremeStreet(build, mapping);
@@ -385,6 +409,7 @@ export function classifyVehicleWithMapping(
     preparation,
     supplementalClasses,
     xtremeStreet,
+    streetModified,
     messages: buildMessages(mapping, preparation, evaluations, xtremeStreet)
   };
 }
@@ -397,40 +422,57 @@ export function classifyVehicle(
   const preparation = assessModifications(findings);
   const mapping = getVehicleMapping(selection);
   const xtremeStreet = evaluateXtremeStreet(build, mapping);
+  const streetModified = evaluateStreetModified(build, mapping);
 
   if (!mapping) {
     const vehicleMessage = selection.notListed
       ? "This vehicle is outside the reviewed catalog. Send the exact year, make, model, and package details to a regional chair instead of guessing."
       : "This exact year, model, and submodel does not yet have a reviewed first-party placement in this app. Do not guess from a similar trim; send it for manual review.";
     const xtremeEligible = xtremeStreet.status === "eligible" && xtremeStreet.recommendedClass;
+    const streetModifiedEligible = streetModified.status === "eligible" && streetModified.recommendedClass;
+    const selectedClass = xtremeEligible
+      ? xtremeStreet.recommendedClass
+      : streetModifiedEligible
+        ? streetModified.recommendedClass
+        : null;
     return {
       mapping: null,
-      selectedCategory: null,
-      selectedClass: xtremeEligible ? xtremeStreet.recommendedClass : null,
-      confidence: xtremeEligible ? "limited" : "manual-review",
-      evaluations: CATEGORY_ORDER.map((category) => ({
-        category,
-        status: "manual-review",
-        blockers: preparation.manualFindings,
-        preparationLegal: preparation.legalCategories.includes(category),
-        mappingAvailable: false,
-        note: vehicleMessage
-      })),
+      selectedCategory: streetModifiedEligible && !xtremeEligible ? "streetModified" : null,
+      selectedClass,
+      confidence: selectedClass ? "limited" : "manual-review",
+      evaluations: CATEGORY_ORDER.map((category) =>
+        category === "streetModified"
+          ? evaluateCategory(category, null, findings, preparation, streetModified)
+          : {
+              category,
+              status: "manual-review",
+              blockers: preparation.manualFindings,
+              preparationLegal: preparation.legalCategories.includes(category),
+              mappingAvailable: false,
+              note: vehicleMessage
+            }
+      ),
       findings,
       preparation,
       supplementalClasses: [...xtremeStreet.eligibleClasses],
       xtremeStreet,
+      streetModified,
       messages: xtremeEligible
         ? [
             "The exact Appendix A vehicle placement is still missing, but the separately evaluated Section 21 path supports " +
               `${xtremeStreet.recommendedClass?.toUpperCase()} independent of that placement.`
           ]
-        : [
-            vehicleMessage,
-            preparation.minimumLegalCategory
-              ? `The modification profile is first legal in ${preparation.minimumLegalCategory}, but the exact vehicle placement is still missing.`
-              : "The modification profile cannot be completed automatically from the selected details."
-          ]
+        : streetModifiedEligible
+          ? [
+              "The exact Appendix A vehicle placement is still missing, but the separately evaluated Section 16 body/weight formula supports " +
+                `${streetModified.recommendedClass?.toUpperCase()} independent of that placement.`
+            ]
+          : [
+              vehicleMessage,
+              preparation.minimumLegalCategory
+                ? `The modification profile is first legal in ${preparation.minimumLegalCategory}, but the exact vehicle placement is still missing.`
+                : "The modification profile cannot be completed automatically from the selected details."
+            ]
     };
   }
 

@@ -44,6 +44,19 @@ const BUILD_SECTIONS: Array<{
       "competitionWeight",
       "roadEquipment"
     ]
+  },
+  {
+    title: "Street Modified (SSM/SM/SMF) eligibility",
+    description: "Required only when you want SSM, SM, or SMF considered for a heavily modified street car.",
+    tip: "Street Modified is not a per-model list — SCCA places SSM/SM/SMF by body configuration, drivetrain, and a minimum-weight formula based on engine displacement.",
+    fields: [
+      "bodyConfiguration",
+      "inductionType",
+      "engineDisplacementLiters",
+      "measuredWeightNoDriver",
+      "tireWidthCategory",
+      "solidAxleRwd"
+    ]
   }
 ];
 
@@ -130,6 +143,21 @@ export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
                   {section.fields.map((field) => {
                     const group = RULE_GROUPS.find((candidate) => candidate.field === field);
                     if (!group) return null;
+                    if (group.inputType === "number") {
+                      return (
+                        <label className="build-field" key={group.field}>
+                          <span className="field-title">{group.title}</span>
+                          <span className="field-help">{group.help}</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            placeholder={group.numberPlaceholder}
+                            value={value[group.field]}
+                            onChange={(event) => update(group.field, event.target.value)}
+                          />
+                        </label>
+                      );
+                    }
                     const selected = group.options.find(
                       (option) => option.value === value[group.field]
                     );
