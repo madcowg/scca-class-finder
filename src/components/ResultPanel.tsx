@@ -25,6 +25,17 @@ interface Props {
   result: ClassificationResult;
 }
 
+const HIDDEN_MESSAGE_PATTERNS = [
+  /^The modification profile is first legal in /,
+  /^Only the exact placements listed in the current source review are used\./
+];
+
+function visibleMessages(messages: string[]): string[] {
+  return messages.filter(
+    (message) => !HIDDEN_MESSAGE_PATTERNS.some((pattern) => pattern.test(message))
+  );
+}
+
 function classComparison(classId: string, currentClass: string | null): string {
   if (!currentClass) return "No completed current class is available for comparison.";
   if (classId === currentClass) return "Same class as the current setup.";
@@ -61,13 +72,13 @@ function ClassificationReason({
     result.xtremeStreet.status === "eligible"
   ) {
     return (
-      <div className="panel classification-reason">
-        <div className="section-heading">
+      <details className="panel classification-reason">
+        <summary className="section-heading">
           <div>
             <p className="eyebrow">How we got here</p>
             <h3>Why this build fits {classLabel(result.selectedClass)}</h3>
           </div>
-        </div>
+        </summary>
         <p>
           No principal Street-through-Modified result was complete for this build. XA/XB was
           then evaluated independently under Section 21 using the production-car exclusions,
@@ -79,20 +90,20 @@ function ClassificationReason({
             <li key={reason}>{reason}</li>
           ))}
         </ul>
-      </div>
+      </details>
     );
   }
 
   if (!result.selectedCategory || !result.selectedClass) {
     const supplementalOnly = result.supplementalClasses.length > 0;
     return (
-      <div className="panel classification-reason">
-        <div className="section-heading">
+      <details className="panel classification-reason">
+        <summary className="section-heading">
           <div>
             <p className="eyebrow">How we got here</p>
             <h3>{supplementalOnly ? "Why this is a separate class path" : "Why this needs a human review"}</h3>
           </div>
-        </div>
+        </summary>
         <p>
           We first evaluated the modification profile without using the vehicle's class listing.
           {minimumLegalCategory
@@ -103,7 +114,7 @@ function ClassificationReason({
             : ` We then checked the exact year, model, and submodel or package, but there is no reviewed Appendix A placement that safely completes this result for ${vehicleName || "this vehicle"}.`}
           The category cards below show exactly where the decision stopped.
         </p>
-      </div>
+      </details>
     );
   }
 
@@ -114,13 +125,13 @@ function ClassificationReason({
     .map((evaluation) => CATEGORY_LABELS[evaluation.category]);
 
   return (
-    <div className="panel classification-reason">
-      <div className="section-heading">
+    <details className="panel classification-reason">
+      <summary className="section-heading">
         <div>
           <p className="eyebrow">How we got here</p>
           <h3>Why this vehicle belongs in {CATEGORY_LABELS[result.selectedCategory]}</h3>
         </div>
-      </div>
+      </summary>
       <p>
         We first evaluated every selected modification against the modeled preparation allowances.
         {minimumLegalCategory
@@ -137,7 +148,7 @@ function ClassificationReason({
           : "No earlier category was available for this exact selection. "}
         Categories are evaluated independently; we do not assume that every preparation category is a linear progression.
       </p>
-    </div>
+    </details>
   );
 }
 
@@ -206,9 +217,9 @@ export function ResultPanel({ selection, result }: Props) {
           </>
         )}
 
-        {result.messages.length > 0 && (
+        {visibleMessages(result.messages).length > 0 && (
           <div className="message-stack">
-            {result.messages.map((message) => (
+            {visibleMessages(result.messages).map((message) => (
               <p key={message}>{message}</p>
             ))}
           </div>
@@ -219,11 +230,13 @@ export function ResultPanel({ selection, result }: Props) {
       <ClassificationReason result={result} vehicleName={vehicleName} />
 
       {result.supplementalClasses.length > 0 && (
-        <div className="supplemental-panel">
-          <div>
-            <p className="eyebrow">Separate rule paths</p>
-            <h3>Supplemental classes listed for this vehicle</h3>
-          </div>
+        <details className="supplemental-panel">
+          <summary className="section-heading">
+            <div>
+              <p className="eyebrow">Separate rule paths</p>
+              <h3>Supplemental classes listed for this vehicle</h3>
+            </div>
+          </summary>
           <div className="chip-row">
             {result.supplementalClasses.map((classId) => (
               <span className="class-chip" key={classId} title={classLabel(classId)}>
@@ -236,12 +249,12 @@ export function ResultPanel({ selection, result }: Props) {
               ? `${result.selectedClass?.toUpperCase()} was selected only after its separate Section 21 checks passed. Other supplemental classes keep their own eligibility tests.`
               : "CAM, Xtreme Street, EVX, Club Spec, and spec classes have separate eligibility and preparation tests and do not displace a legal, closer-to-stock principal result."}
           </p>
-        </div>
+        </details>
       )}
 
       {!result.selectedCategory && result.xtremeStreet.status !== "eligible" && (
-        <div className="panel xtreme-review-panel">
-          <div className="section-heading">
+        <details className="panel xtreme-review-panel">
+          <summary className="section-heading">
             <div>
               <p className="eyebrow">XA / XB check</p>
               <h3>
@@ -250,22 +263,22 @@ export function ResultPanel({ selection, result }: Props) {
                   : "What is still needed for Xtreme Street"}
               </h3>
             </div>
-          </div>
+          </summary>
           <ul className="reason-list">
             {result.xtremeStreet.blockers.map((blocker) => (
               <li key={blocker}>{blocker}</li>
             ))}
           </ul>
-        </div>
+        </details>
       )}
 
-      <div className="panel national-history-panel">
-        <div className="section-heading">
+      <details className="panel national-history-panel">
+        <summary className="section-heading">
           <div>
             <p className="eyebrow">Five-year official evidence</p>
             <h3>How competitive is my car in Nationals?</h3>
           </div>
-        </div>
+        </summary>
         <p className="category-path-note">
           This view uses official Solo Nationals class winners from {NATIONAL_EVENT_YEARS[0]}-
           {NATIONAL_EVENT_YEARS.at(-1)} and only includes records whose published vehicle year
@@ -390,28 +403,28 @@ export function ResultPanel({ selection, result }: Props) {
             for complete finishing orders.
           </p>
         )}
-      </div>
+      </details>
 
-      <div className="panel result-detail-panel">
-        <div className="section-heading">
+      <details className="panel result-detail-panel">
+        <summary className="section-heading">
           <div>
             <p className="eyebrow">Why this result</p>
             <h3>Category-by-category evaluation</h3>
           </div>
-        </div>
+        </summary>
         <CategoryLadder evaluations={result.evaluations} />
-      </div>
+      </details>
 
       <RuleLedger findings={result.findings} />
 
       {result.selectedClass && (
-        <div className="panel pro-choice-panel">
-          <div className="section-heading">
+        <details className="panel pro-choice-panel">
+          <summary className="section-heading">
             <div>
               <p className="eyebrow">Driver challenge</p>
               <h3>Are you looking to compete in ALSCCA PRO?</h3>
             </div>
-          </div>
+          </summary>
           <label className="pro-toggle">
             <input
               type="checkbox"
@@ -440,7 +453,7 @@ export function ResultPanel({ selection, result }: Props) {
             </a>{" "}
             for the current regional competition-group rules.
           </p>
-        </div>
+        </details>
       )}
     </section>
   );

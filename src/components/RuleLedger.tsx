@@ -40,7 +40,7 @@ function ruleReferenceLinks(section: string) {
 
 export function RuleLedger({ findings }: Props) {
   return (
-    <details className="ledger" open>
+    <details className="ledger">
       <summary>
         <span>Rule ledger</span>
         <span>{findings.length} build checks</span>

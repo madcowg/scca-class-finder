@@ -104,7 +104,6 @@ export default function App() {
         </a>
 
         <div className="header-actions">
-          <span className="data-badge">2026 rules framework</span>
           <a
             className="header-link"
             href="https://www.scca.com/downloads/78494/download"
@@ -144,7 +143,7 @@ export default function App() {
           <section className="intro-band">
             <div>
               <p className="eyebrow">SCCA Solo classification assistant</p>
-              <h1>Let's find where you belong before you go to sign up for your event</h1>
+              <h1>Find where you belong before sign up!</h1>
               <p className="intro-copy">It's ok not to know!</p>
             </div>
           </section>
