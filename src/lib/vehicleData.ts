@@ -220,8 +220,9 @@ function rulebookVariantIdentity(description: string): string {
     .replace(/\*?\s*Limited Prep\b/gi, "")
     .replace(/\b(?:19|20)?\d{2}(?:1\/2)?\s*-\s*(?:19|20)?\d{2}\b/g, "")
     .replace(/\b(?:19|20)\d{2}\b/g, "")
-    .replace(/\((?:incl(?:uding)?|excl(?:uding)?)[^)]*\)/gi, "")
-    .replace(/\b(?:incl(?:uding)?|excl(?:uding)?)\b.*$/gi, "")
+    .replace(/\(\s*all\s*\)/gi, "")
+    .replace(/\((?:inc(?:l(?:uding)?)?|excl(?:uding)?)[^)]*\)/gi, "")
+    .replace(/\b(?:inc(?:l(?:uding)?)?|excl(?:uding)?)\b.*$/gi, "")
     .replace(/\bchassis\b/gi, "")
     .replace(/[()]/g, " ");
   return identityText(withoutYears);

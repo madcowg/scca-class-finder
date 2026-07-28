@@ -307,6 +307,9 @@ describe("classifyVehicle", () => {
 
     const emira = getVehicleMapping({ make: "Lotus", model: "Emira", year: "2024" });
     expect(emira?.classes).toEqual(expect.arrayContaining(["ss", "sst"]));
+
+    const accord = getVehicleMapping({ make: "Honda", model: "Accord", year: "2000" });
+    expect(accord?.classes).toEqual(expect.arrayContaining(["hs", "dst", "est", "fsp"]));
   });
 
   it("does not leak timeless old-generation variants into a modern model year", () => {
