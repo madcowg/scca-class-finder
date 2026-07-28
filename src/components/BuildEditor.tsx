@@ -183,11 +183,16 @@ export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
                         >
                           {group.options.map((option) => (
                             <option key={option.value} value={option.value}>
-                              {option.label}
+                              {option.plainLabel ?? option.label}
                             </option>
                           ))}
                         </select>
                         <span className="selected-detail">{selected?.description}</span>
+                        {selected?.plainLabel && (
+                          <span className="selected-technical">
+                            Rulebook wording: {selected.label} ({selected.section})
+                          </span>
+                        )}
                       </label>
                     );
                   })}

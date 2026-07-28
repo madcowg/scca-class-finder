@@ -86,6 +86,8 @@ export type BuildField = keyof BuildProfile;
 export interface RuleOption {
   value: string;
   label: string;
+  /** Plain-language rewrite of `label` for the build-wizard dropdown; `label` stays the technical/audit-trail text. */
+  plainLabel?: string;
   description: string;
   allowedCategories: PrincipalCategory[];
   section: string;
