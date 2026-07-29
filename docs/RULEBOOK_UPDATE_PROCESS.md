@@ -107,6 +107,40 @@ distinct kinds of change, in order of frequency:
 Page count grew modestly (421 -> 429 pages, 2025 -> 2026), consistent with
 incremental additions rather than a wholesale restructure.
 
+## Monthly Fastrack monitoring
+
+The annual edition isn't the only thing that changes classifications — Tech
+Bulletins/Fastrack can amend rules mid-year with their own effective dates
+(`I.1.2`), independently of the January edition that later canonicalizes
+them. SCCA's own Fastrack page states bulletins are "usually updated once a
+month," so this needs its own, faster check than the annual one above.
+
+`scripts/check-fastrack-update.mjs` watches for this. The Fastrack news page
+(https://www.scca.com/pages/fastrack-news) renders its current-year download
+links client-side, so a plain HTTP fetch can't read them there — but the
+compiled "All `<year>` Fastrack News — Solo Edition" PDF has a stable
+download link (SCCA replaces its *content* each month, same download ID),
+and its filename embeds the month/year of its last update (e.g. "2026 Solo
+Fastrack All 072026.pdf"). The script resolves that redirect, reads the
+filename, and compares it against the last-seen value it stored in
+`logs/fastrack-last-seen.json` (gitignored) — a changed stamp means a new
+bulletin was likely published, logged to `logs/fastrack-check.log`.
+
+A Windows Task Scheduler entry ("SCCA Solo Fastrack Update Check") runs this
+roughly every 4 weeks. `FASTRACK_ARCHIVE_DOWNLOAD_ID` at the top of the
+script is specific to the current rulebook year and must be re-resolved by
+hand each year (fetch the Fastrack page, find Solo Edition's compiled "All
+`<year>` Fastrack News" link, copy its `downloads/<id>/download` URL in) —
+fold this into step 4 below so it doesn't silently go stale.
+
+When `logs/fastrack-check.log` reports `new-fastrack-update`: download the
+compiled archive PDF, read whatever's new since the last-reviewed month (the
+archive is cumulative, so diff against what `docs/DATA_SOURCES.md` last
+recorded reviewing), and apply any classification-relevant change the same
+way as any other data change in this repo — a versioned override, a
+regression test, and a `docs/DATA_SOURCES.md` update. Don't wait for the
+annual edition to adopt a Fastrack change that's already in effect now.
+
 ## Recommended review process for a new edition
 
 When a new-year rulebook is confirmed available (see Scheduling below):
