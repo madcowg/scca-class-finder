@@ -177,3 +177,58 @@ describe("getVehicleMapping for vehicles with no Street-category placement", () 
     expect(ambiguous).toBeNull();
   });
 });
+
+describe("getVehicleMapping generic-family-catch-all-by-elimination matching", () => {
+  it("resolves a plain EPA trim name (328i) against a chassis+exclusion-worded Street row by elimination", () => {
+    // Reported bug: a stock 2011 BMW 328i could not be classified at all. Appendix A's GS
+    // row for the E9x-era 3 Series reads "3 Series (E9x chassis; non-M3, non-turbo)" -- it
+    // never names "328i" anywhere, describing the class purely by what it excludes. "328i"
+    // shares no vocabulary with that text, but it also doesn't match any of the OTHER 3
+    // Series rows that positively name what's excluded (the M3, or the turbocharged 335i/
+    // 335is row), so by elimination it can only be the one remaining catch-all.
+    const bmw328i = getVehicleMapping({ make: "BMW", model: "3 Series", year: "2011", variant: "328i" });
+    expect(bmw328i?.classSources?.gs?.description).toBe(
+      "3 Series (E9x chassis; non-M3, non-turbo) (2007-13)"
+    );
+  });
+
+  it("does not let a genuinely turbocharged sibling trim fall into the same catch-all", () => {
+    // The turbocharged 335i/335is have their own positively-named row ("335i & 335is (E9X
+    // chassis; 6-cyl Turbo)") -- a bare "335i" selection must resolve there, specifically NOT
+    // to the non-turbo GS catch-all, even though both are nominally "3 Series" trims.
+    const bmw335i = getVehicleMapping({
+      make: "BMW",
+      model: "3 Series",
+      year: "2011",
+      variant: "335i & 335is (E9X chassis; 6-cyl Turbo) (2007-13)"
+    });
+    expect(bmw335i?.classSources?.fs?.description).toBe(
+      "335i & 335is (E9X chassis; 6-cyl Turbo) (2007-13)"
+    );
+    expect(bmw335i?.classSources?.gs).toBeUndefined();
+  });
+
+  it("matches a trim named only inside a listing's qualifier, without losing sibling trims to a greedy incl/excl strip", () => {
+    // Regression guard for a second bug found alongside the elimination fix: the current
+    // G20/21-generation row "3 series (G20/21 Chassis 330i incl. xDrive, 330e incl xDrive,
+    // M340i)" names three trims inside its qualifier. rulebookVariantIdentity's "incl X"
+    // stripping used to be anchored to the end of the whole string, so the first "incl"
+    // match deleted everything after it -- including "M340i", which has no "incl" of its own
+    // and would otherwise have been silently unmatchable.
+    const m340i = getVehicleMapping({
+      make: "BMW",
+      model: "3 Series",
+      year: "2024",
+      variant: "M340i Sedan"
+    });
+    expect(m340i?.classSources?.fs?.description).toContain("G20/21");
+
+    const car330e = getVehicleMapping({
+      make: "BMW",
+      model: "3 Series",
+      year: "2024",
+      variant: "330e xDrive Sedan"
+    });
+    expect(car330e?.classSources?.fs?.description).toContain("G20/21");
+  });
+});

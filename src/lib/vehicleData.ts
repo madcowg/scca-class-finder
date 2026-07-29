@@ -209,6 +209,21 @@ function containsIdentity(haystack: string, needle: string): boolean {
   return target.length > 1 && source.includes(` ${target} `);
 }
 
+// Physical body-style/EPA-catalog embellishment words that don't change which Street/ST/SP
+// listing a trim belongs to and that Appendix A rows frequently omit even when the EPA
+// production catalog appends them to a variant name (e.g. "330i Sedan", "911 Coupe").
+const BODY_STYLE_TOKENS = new Set([
+  "sedan",
+  "coupe",
+  "wagon",
+  "convertible",
+  "hatchback",
+  "hatch",
+  "cabrio",
+  "cabriolet",
+  "roadster"
+]);
+
 function rulebookIdentity(description: string): string {
   const withoutPreparationLabel = description.replace(/\*?\s*Limited Prep\b/gi, "");
   const beforeQualifier = withoutPreparationLabel.split("(")[0];
@@ -223,7 +238,17 @@ function rulebookVariantIdentity(description: string): string {
     .replace(/\(\s*all\s*\)/gi, "")
     .replace(/\(\s*all\s*,\s*(?:excl(?:uding)?|non-?)[^)]*\)/gi, "")
     .replace(/\((?:inc(?:l(?:uding)?)?|excl(?:uding)?)[^)]*\)/gi, "")
-    .replace(/\b(?:inc(?:l(?:uding)?)?|excl(?:uding)?)\b.*$/gi, "")
+    // "excl X" drops X entirely (X is NOT covered by this listing, so it must not survive as
+    // a matchable token) -- bounded to the next comma/semicolon/paren, not to the end of the
+    // whole string, since one row can list several unrelated exclusions or trims in sequence.
+    .replace(/\bexcl(?:uding)?\b[^,;)]*/gi, "")
+    // "incl X" only drops the word "incl"/"including" itself -- X (e.g. "xDrive" in "330i
+    // incl. xDrive") stays as a real token, since the listing is positively saying X IS
+    // covered. Dropping the whole clause here would silently make an included trim
+    // unmatchable, and previously anchoring this to end-of-string deleted every trim named
+    // after the first "incl" mention entirely, including ones with no qualifier of their own
+    // (e.g. "M340i" in "330i incl. xDrive, 330e incl xDrive, M340i").
+    .replace(/\binc(?:l(?:uding)?)?\.?\s*/gi, "")
     .replace(/\bchassis\b/gi, "")
     .replace(/[()]/g, " ");
   return identityText(withoutYears);
@@ -783,7 +808,7 @@ function relatedListingIsCompatible(
     .every((token) => streetTokens.has(token));
 }
 
-function rulebookListingsForFamily(
+export function rulebookListingsForFamily(
   make: string,
   family: string,
   year: string,
@@ -813,6 +838,24 @@ function rulebookVariantMatches(
   const listingIdentity = rulebookIdentity(listing.description);
   if (requestedIdentity === listingIdentity) return true;
 
+  // A listing can positively name more than one trim before its qualifier, e.g. "335i &
+  // 335is (E9X chassis; 6-cyl Turbo)" -- a bare requested variant of just one of those names
+  // ("335i") should still match it as a whole word within that compound identity.
+  if (containsIdentity(listingIdentity, requestedIdentity)) return true;
+
+  // A listing can also name multiple trims INSIDE its qualifier rather than before it, e.g.
+  // "3 series (G20/21 Chassis 330i incl. xDrive, 330e incl xDrive, M340i)" -- the requested
+  // variant's meaningful tokens (ignoring body-style words like "Sedan"/"Coupe"/"Wagon" that
+  // the EPA catalog appends but Appendix A rarely repeats) just need to all appear somewhere
+  // in the listing's full qualifier-inclusive identity.
+  const requestedSignificantTokens = requestedVariantIdentity
+    .split(" ")
+    .filter((token) => token.length > 0 && !BODY_STYLE_TOKENS.has(token));
+  if (requestedSignificantTokens.length > 0) {
+    const listingTokens = new Set(listingVariantIdentity.split(" ").filter(Boolean));
+    if (requestedSignificantTokens.every((token) => listingTokens.has(token))) return true;
+  }
+
   if (
     listingIdentity === identityText(family) &&
     requestedIdentity.startsWith(`${listingIdentity} `)
@@ -824,6 +867,42 @@ function rulebookVariantMatches(
     );
   }
   return false;
+}
+
+// A listing counts as a "generic family catch-all" when its base identity is just the bare
+// family name (nothing distinguishing appears before its first parenthetical, e.g. "3 Series
+// (...)" rather than "335i & 335is (...)") AND every clause inside its parentheticals is
+// non-committal -- a year range, the word "all", a chassis-code mention, or an exclusion
+// clause ("non-X", "excl. X") -- rather than positively naming a specific different trim.
+// Appendix A often covers a whole model family with exactly one such row (e.g. BMW 3 Series
+// "(E9x chassis; non-M3, non-turbo)") alongside separate rows that positively name the
+// higher-performance trims it excludes (e.g. "335i & 335is (E9X chassis; 6-cyl Turbo)"). A
+// real EPA-catalog trim name like "328i" shares no vocabulary with either row's text, but by
+// elimination -- it isn't M3, isn't turbo, so it isn't any of the positively-named rows --
+// it can only belong to the one remaining catch-all.
+function isGenericFamilyCatchAll(listing: AppendixListing, family: string): boolean {
+  if (rulebookIdentity(listing.description) !== identityText(family)) return false;
+  if (!listing.description.includes("(")) return true;
+
+  const parenContents = [...listing.description.matchAll(/\(([^)]*)\)/g)].map((match) => match[1]);
+  const clauses = parenContents
+    .flatMap((content) => content.split(/[,;]/))
+    .map((clause) => clean(clause))
+    .filter(Boolean);
+
+  const isNonCommittalClause = (clause: string): boolean => {
+    if (/^(?:19|20)?\d{2}(?:1\/2)?\s*-\s*(?:19|20)?\d{2}$/.test(clause)) return true;
+    if (/^(?:19|20)\d{2}$/.test(clause)) return true;
+    if (/^all$/i.test(clause)) return true;
+    if (/^non-[a-z0-9]+(?:\s+[a-z0-9]+)*$/i.test(clause)) return true;
+    if (/^excl(?:uding)?\.?\s+/i.test(clause)) return true;
+    if (/^[a-z]+\d[a-z0-9]*\s+chassis$/i.test(clause)) return true;
+    if (/^chassis$/i.test(clause)) return true;
+    if (/^\*?\s*limited prep$/i.test(clause)) return true;
+    return false;
+  };
+
+  return clauses.every(isNonCommittalClause);
 }
 
 interface CategoryListingResolution {
@@ -871,6 +950,16 @@ function resolveListingForSelectionInCategory(
       rulebookVariantMatches(listing, selection.variant!, selection.model)
     )
     : listings;
+
+  if (matches.length === 0 && selection.variant) {
+    // No listing's text positively matched this exact selection at all -- try resolving by
+    // elimination against a single generic family catch-all (see isGenericFamilyCatchAll).
+    const catchAlls = listings.filter((listing) => isGenericFamilyCatchAll(listing, selection.model));
+    if (catchAlls.length === 1) {
+      return { listing: catchAlls[0], hasAnyListingForFamily: true };
+    }
+  }
+
   const classes = uniqueSorted(matches.map((listing) => listing.classId));
   return {
     listing: classes.length === 1 ? matches[0] ?? null : null,

@@ -657,15 +657,21 @@ describe("classifyVehicle", () => {
     expect(result.supplementalClasses).toEqual([]);
   });
 
-  it("stops at manual review when stale higher-category mappings are not officially verified", () => {
+  it("resolves a genuine official higher-category placement but still refuses to invent one that isn't verified", () => {
+    // The Camaro (V6) 2010 override was deliberately reduced to its verified DS Street
+    // listing only (see docs/DATA_SOURCES.md), because at the time no Street Prepared
+    // placement could be confirmed. Appendix A does have one -- "Camaro (non-ZL1) (2010-15)"
+    // (ESP) -- but a bare "V6" selection couldn't be matched against that row's "(non-ZL1)"
+    // exclusion-only qualifier until officialMappingFor's generic-family-catch-all-by-
+    // elimination fix landed (see vehicleData.test.ts's submodel-word ambiguity guard tests
+    // and the BMW 328i fix this was built alongside). With that fix, this now correctly
+    // resolves ESP directly from the official data instead of stopping at manual review.
     const camaro = classifyVehicle(
       { make: "Chevrolet", model: "Camaro (V6)", year: "2010" },
       { ...DEFAULT_BUILD, tires: "dotBelow200" }
     );
-    expect(camaro.selectedClass).toBeNull();
-    expect(camaro.evaluations.find((item) => item.category === "streetPrepared")?.status).toBe(
-      "not-listed"
-    );
+    expect(camaro.selectedClass).toBe("esp");
+    expect(camaro.mapping?.classSources?.esp?.description).toBe("Camaro (non-ZL1) (2010-15)");
 
     const nismo = classifyVehicle(
       { make: "Nissan", model: "350Z NISMO", year: "2004" },
