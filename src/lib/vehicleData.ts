@@ -221,8 +221,20 @@ const BODY_STYLE_TOKENS = new Set([
   "hatch",
   "cabrio",
   "cabriolet",
-  "roadster"
+  "roadster",
+  "sportswagon",
+  "gt",
+  "gran",
+  "turismo"
 ]);
+
+// AWD-system marketing suffixes. A listing that names a base trim without any of these
+// (e.g. "3 series (... 330i incl. xDrive ...)" already handles this explicitly, but many
+// rows don't bother) is read as covering that trim regardless of driven-wheel option unless
+// a SEPARATE listing specifically claims the AWD-badged version -- in which case this
+// fallback never fires, since that dedicated listing already matches through an earlier,
+// more specific check.
+const DRIVETRAIN_SUFFIX_TOKENS = new Set(["xdrive", "sdrive", "4matic", "quattro", "4motion", "awd"]);
 
 function rulebookIdentity(description: string): string {
   const withoutPreparationLabel = description.replace(/\*?\s*Limited Prep\b/gi, "");
@@ -848,12 +860,29 @@ function rulebookVariantMatches(
   // variant's meaningful tokens (ignoring body-style words like "Sedan"/"Coupe"/"Wagon" that
   // the EPA catalog appends but Appendix A rarely repeats) just need to all appear somewhere
   // in the listing's full qualifier-inclusive identity.
+  const listingTokens = new Set(listingVariantIdentity.split(" ").filter(Boolean));
   const requestedSignificantTokens = requestedVariantIdentity
     .split(" ")
     .filter((token) => token.length > 0 && !BODY_STYLE_TOKENS.has(token));
-  if (requestedSignificantTokens.length > 0) {
-    const listingTokens = new Set(listingVariantIdentity.split(" ").filter(Boolean));
-    if (requestedSignificantTokens.every((token) => listingTokens.has(token))) return true;
+  if (
+    requestedSignificantTokens.length > 0 &&
+    requestedSignificantTokens.every((token) => listingTokens.has(token))
+  ) {
+    return true;
+  }
+
+  // Fallback: also ignore AWD-system marketing suffixes, but only once the stricter check
+  // above (which still requires them) has already failed to match anything -- this keeps a
+  // dedicated AWD-specific listing (if one exists) preferred over a generic base-trim one.
+  const requestedTokensIgnoringDrivetrain = requestedSignificantTokens.filter(
+    (token) => !DRIVETRAIN_SUFFIX_TOKENS.has(token)
+  );
+  if (
+    requestedTokensIgnoringDrivetrain.length > 0 &&
+    requestedTokensIgnoringDrivetrain.length < requestedSignificantTokens.length &&
+    requestedTokensIgnoringDrivetrain.every((token) => listingTokens.has(token))
+  ) {
+    return true;
   }
 
   if (
