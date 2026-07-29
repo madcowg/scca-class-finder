@@ -124,10 +124,22 @@ When a new-year rulebook is confirmed available (see Scheduling below):
    comparison, don't overwrite it). Use `scripts/extract-rulebook-vehicles.py`
    as the starting point — it already knows how to read the reviewed
    physical page/column segments correctly (plain PDF text extraction
-   interleaves the two columns). Expect the majority of diffs to be
-   mechanical year-range increments (pattern 1 above); flag every listing
-   whose *non-year* text changed (pattern 2) for manual review, since those
-   are the ones that can silently change what's legal.
+   interleaves the two columns). Then run
+   `node scripts/diff-appendix-a-editions.mjs <old-edition.json> <new-edition.json>`
+   rather than eyeballing a raw text diff — it buckets every listing into
+   `reclassified` (same vehicle, different class letter), `qualifierChanged`
+   (same class, wording changed — e.g. an exclusion added or removed),
+   `yearRolled`/`unchanged` (routine, safe to skip), `added`, `removed`, and
+   `ambiguous` (multiple candidates, resolve by hand rather than guess).
+   **`reclassified` is the highest-priority bucket and must be checked every
+   single year, even though no example of it turned up in the 2025→2026
+   sample this doc's research checked** — SCCA has moved specific vehicles
+   between classes in past years, a plain year-range diff would never
+   surface that on its own, and a routine-looking year bump can ship
+   alongside a real reclassification for the same listing (the tool flags
+   the class change as `reclassified`, not `yearRolled`, precisely so this
+   can't get missed). Treat every `qualifierChanged` entry as a real
+   eligibility change to verify too, not just cosmetic wording.
 4. **Rename every `-2026-`/`2026` reference** across the codebase to the new
    year: `src/data/appendix-a-2026.json` and its import in
    `src/lib/vehicleData.ts`, `src/data/prepared-{cp,dp,ep,fp}-2026.json` and
