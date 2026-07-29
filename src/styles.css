@@ -510,7 +510,9 @@ details:not([open]) > summary.section-heading { margin-bottom: 0; }
 .category-content { padding: 16px 17px; }
 .category-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .category-title-row h4 { margin: 0 0 3px; font-size: 16px; }
-.category-title-row div > span { color: var(--quiet); font-size: 12px; }
+.category-title-row div > span, .category-title-row div > a { color: var(--quiet); font-size: 12px; }
+.category-title-row div > a { text-decoration: none; }
+.category-title-row div > a:hover { color: var(--red-dark); text-decoration: underline; }
 .status-pill { padding: 5px 8px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .07em; }
 .status-eligible { border-color: #a6d1b1; background: #f4fbf5; }
 .status-eligible .status-pill { color: var(--green); border-color: #a6d1b1; }

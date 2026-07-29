@@ -27,6 +27,23 @@ export const CATEGORY_SECTIONS: Record<PrincipalCategory, string> = {
   modified: "Section 18"
 };
 
+const RULEBOOK_PDF_URL = "https://www.scca.com/downloads/78494/download";
+
+// Physical PDF page each category's section starts on, matching RuleLedger's
+// finer-grained SECTION_PAGES lookup for the same six sections.
+const CATEGORY_SECTION_PAGES: Record<PrincipalCategory, number> = {
+  street: 75,
+  streetTouring: 88,
+  streetPrepared: 102,
+  streetModified: 124,
+  prepared: 132,
+  modified: 156
+};
+
+export function categorySectionUrl(category: PrincipalCategory): string {
+  return `${RULEBOOK_PDF_URL}#page=${CATEGORY_SECTION_PAGES[category]}`;
+}
+
 const categoryClassIds: Record<PrincipalCategory, Set<string>> = {
   street: new Set(["ss", "as", "bs", "cs", "ds", "es", "fs", "gs", "hs", "ssr"]),
   streetTouring: new Set(["sst", "ast", "bst", "cst", "dst", "est", "gst", "sts", "str", "stu", "stx", "sth", "stf", "stp"]),

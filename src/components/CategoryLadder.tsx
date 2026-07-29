@@ -1,6 +1,7 @@
 import {
   CATEGORY_LABELS,
   CATEGORY_SECTIONS,
+  categorySectionUrl,
   classLabel
 } from "../lib/classMetadata";
 import type { CategoryEvaluation } from "../lib/types";
@@ -31,7 +32,13 @@ export function CategoryLadder({ evaluations }: Props) {
             <div className="category-title-row">
               <div>
                 <h4>{CATEGORY_LABELS[evaluation.category]}</h4>
-                <span>{CATEGORY_SECTIONS[evaluation.category]}</span>
+                <a
+                  href={categorySectionUrl(evaluation.category)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {CATEGORY_SECTIONS[evaluation.category]}
+                </a>
               </div>
               <span className="status-pill">{STATUS_LABEL[evaluation.status]}</span>
             </div>
@@ -39,22 +46,6 @@ export function CategoryLadder({ evaluations }: Props) {
             {evaluation.classId && (
               <p className="mapped-class">{classLabel(evaluation.classId)}</p>
             )}
-
-            {evaluation.blockers.length > 0 && (
-              <ul className="blocker-list">
-                {evaluation.blockers.slice(0, 3).map((blocker) => (
-                  <li key={blocker.field}>
-                    <strong>{blocker.title}:</strong> {blocker.selectedLabel}
-                    <span className="blocker-section">{blocker.section}</span>
-                  </li>
-                ))}
-                {evaluation.blockers.length > 3 && (
-                  <li>+{evaluation.blockers.length - 3} more blockers</li>
-                )}
-              </ul>
-            )}
-
-            {evaluation.note && <p className="category-note">{evaluation.note}</p>}
           </div>
         </article>
       ))}
