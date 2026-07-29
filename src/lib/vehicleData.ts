@@ -937,8 +937,32 @@ function isGenericFamilyCatchAll(listing: AppendixListing, family: string): bool
     return codes.length > 0 && codes.every((code) => /^[a-z]+\d[a-z0-9]*$/i.test(code));
   };
 
+  // A bracket can also read "all <codes>, non-X, non-Y" (e.g. "all E30, E36, & E46, non-M,
+  // non-E90") -- an enumeration of covered chassis generations by bare code (no trailing
+  // "chassis" word at all), followed by exclusions. Recognize the whole bracket as
+  // non-committal when it starts with "all" and every remaining comma-separated item is
+  // either a bare chassis-code-like token or a "non-X"/"excl X" exclusion.
+  const isAllChassisListBracket = (bracketContent: string): boolean => {
+    if (!/^\s*all\b/i.test(bracketContent)) return false;
+    const items = bracketContent
+      .replace(/^\s*all\b/i, "")
+      .split(/[,;]/)
+      .flatMap((item) => item.split(/&/))
+      .map((item) => clean(item))
+      .filter(Boolean);
+    return (
+      items.length > 0 &&
+      items.every(
+        (item) =>
+          /^[a-z]+\d[a-z0-9]*$/i.test(item) ||
+          /^non-[a-z0-9]+(?:\s+[a-z0-9]+)*$/i.test(item) ||
+          /^excl(?:uding)?\.?\s+/i.test(item)
+      )
+    );
+  };
+
   const clauses = parenContents
-    .filter((content) => !isChassisCodeOnlyBracket(content))
+    .filter((content) => !isChassisCodeOnlyBracket(content) && !isAllChassisListBracket(content))
     .flatMap((content) => content.split(/[,;]/))
     .map((clause) => clean(clause))
     .filter(Boolean);
