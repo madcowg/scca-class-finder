@@ -826,28 +826,45 @@ function rulebookVariantMatches(
   return false;
 }
 
-function officialStreetListingForSelection(
-  selection: VehicleSelection
-): AppendixListing | null {
+interface CategoryListingResolution {
+  // The single unambiguous listing for this selection in this category, or null if
+  // none/ambiguous.
+  listing: AppendixListing | null;
+  // Whether this category has ANY listing at all for this family, regardless of
+  // whether the specific selection could be unambiguously resolved to one of them.
+  // Lets a caller distinguish "this category doesn't cover this vehicle" from "it
+  // does, but this selection is ambiguous within it" -- those require different
+  // handling (see officialMappingFor's Street Touring/Prepared fallback).
+  hasAnyListingForFamily: boolean;
+}
+
+function resolveListingForSelectionInCategory(
+  selection: VehicleSelection,
+  category: AppendixCategory
+): CategoryListingResolution {
   const directMatches = selection.variant
     ? appendixListings.filter(
       (listing) =>
-        listing.category === "street" &&
+        listing.category === category &&
         rulebookListingMatchesMake(listing, selection.make) &&
         rulebookYearApplies(listing, selection.year) &&
         normalized(listing.description) === normalized(selection.variant!)
     )
     : [];
   const directClasses = uniqueSorted(directMatches.map((listing) => listing.classId));
-  if (directClasses.length === 1) return directMatches[0];
+  if (directClasses.length === 1) {
+    return { listing: directMatches[0], hasAnyListingForFamily: true };
+  }
 
   const listings = rulebookListingsForFamily(
     selection.make,
     selection.model,
     selection.year,
-    "street"
+    category
   );
-  if (listings.length === 0) return null;
+  if (listings.length === 0) {
+    return { listing: null, hasAnyListingForFamily: false };
+  }
 
   const matches = selection.variant
     ? listings.filter((listing) =>
@@ -855,7 +872,23 @@ function officialStreetListingForSelection(
     )
     : listings;
   const classes = uniqueSorted(matches.map((listing) => listing.classId));
-  return classes.length === 1 ? matches[0] ?? null : null;
+  return {
+    listing: classes.length === 1 ? matches[0] ?? null : null,
+    hasAnyListingForFamily: true
+  };
+}
+
+function officialListingForSelectionInCategory(
+  selection: VehicleSelection,
+  category: AppendixCategory
+): AppendixListing | null {
+  return resolveListingForSelectionInCategory(selection, category).listing;
+}
+
+function officialStreetListingForSelection(
+  selection: VehicleSelection
+): AppendixListing | null {
+  return officialListingForSelectionInCategory(selection, "street");
 }
 
 function relatedOfficialListings(
@@ -893,46 +926,93 @@ function relatedOfficialListings(
   );
 }
 
-function officialMappingFor(selection: VehicleSelection): VehicleMapping | null {
-  const streetListing = officialStreetListingForSelection(selection);
-  if (!streetListing) return null;
+function classSourcesFor(listings: AppendixListing[]): Record<string, VehicleClassSource> {
+  return listings.reduce<Record<string, VehicleClassSource>>((result, listing) => {
+    const existing = result[listing.classId];
+    result[listing.classId] = existing
+      ? {
+          ...existing,
+          description: `${existing.description}; ${listing.description}`
+        }
+      : {
+          description: listing.description,
+          ruleSection: listing.ruleSection,
+          sourceUrl: listing.sourceUrl
+        };
+    return result;
+  }, {});
+}
 
-  const related = relatedOfficialListings(streetListing, selection);
+function officialMappingFor(selection: VehicleSelection): VehicleMapping | null {
+  const streetResolution = resolveListingForSelectionInCategory(selection, "street");
+  const streetListing = streetResolution.listing;
   const curated = findReviewedEntry(selection);
+
+  if (streetListing) {
+    const related = relatedOfficialListings(streetListing, selection);
+    const allClasses = uniqueSorted([
+      streetListing.classId,
+      ...related.map((listing) => listing.classId),
+      ...(curated?.classes ?? []).map((classId) => classId.toLowerCase())
+    ]);
+
+    return {
+      selection: {
+        ...selection,
+        variant: selection.variant ?? streetListing.description
+      },
+      classes: allClasses,
+      source: "2026-rulebook-appendix-a",
+      coverage: "verified-classes",
+      sourceNote:
+        "The exact Street placement and any shown matching preparation-category placements come from the official 2026 Appendix A. Categories without an exact identity match remain unlisted.",
+      classSources: classSourcesFor([streetListing, ...related])
+    };
+  }
+
+  // Some vehicles have no Street-category placement in Appendix A at all -- the
+  // rulebook classes them directly into Street Touring and/or Street Prepared instead
+  // (e.g. vintage GM/Mopar platform-code listings like J-Body, N-Body, A-body,
+  // Chevelle, Barracuda, Dart, and Duster). Requiring a Street match first would make
+  // these permanently unreachable even though each category resolves unambiguously on
+  // its own terms. There is no Street row to anchor a cross-category relation search
+  // from here, so each category is resolved independently rather than related to one
+  // another the way Street's own related-listing search works.
+  //
+  // Critically, this must only fire when Street genuinely has zero listings for this
+  // family -- NOT whenever officialStreetListingForSelection merely returned null,
+  // which also happens when real Street listings exist but the selection is ambiguous
+  // between them (e.g. Honda S2000 needs its CR/non-CR package to pick AS vs CS). That
+  // ambiguity must keep surfacing as manual-review, not silently fall through to
+  // whichever Street Touring/Prepared class happens to resolve unambiguously on its
+  // own -- a car that hasn't been confirmed for its correct Street class shouldn't get
+  // recommended into a different category just because that category's placement was
+  // easier to pin down.
+  if (streetResolution.hasAnyListingForFamily) return null;
+
+  const directTouring = officialListingForSelectionInCategory(selection, "streetTouring");
+  const directPrepared = officialListingForSelectionInCategory(selection, "streetPrepared");
+  if (!directTouring && !directPrepared) return null;
+
+  const directListings = [directTouring, directPrepared].filter(
+    (listing): listing is AppendixListing => Boolean(listing)
+  );
   const allClasses = uniqueSorted([
-    streetListing.classId,
-    ...related.map((listing) => listing.classId),
+    ...directListings.map((listing) => listing.classId),
     ...(curated?.classes ?? []).map((classId) => classId.toLowerCase())
   ]);
-  const sources = [streetListing, ...related].reduce<Record<string, VehicleClassSource>>(
-    (result, listing) => {
-      const existing = result[listing.classId];
-      result[listing.classId] = existing
-        ? {
-            ...existing,
-            description: `${existing.description}; ${listing.description}`
-          }
-        : {
-            description: listing.description,
-            ruleSection: listing.ruleSection,
-            sourceUrl: listing.sourceUrl
-          };
-      return result;
-    },
-    {}
-  );
 
   return {
     selection: {
       ...selection,
-      variant: selection.variant ?? streetListing.description
+      variant: selection.variant ?? directListings[0].description
     },
     classes: allClasses,
     source: "2026-rulebook-appendix-a",
     coverage: "verified-classes",
     sourceNote:
-      "The exact Street placement and any shown matching preparation-category placements come from the official 2026 Appendix A. Categories without an exact identity match remain unlisted.",
-    classSources: sources
+      "This vehicle has no Street-category placement in the official 2026 Appendix A; its Street Touring and/or Street Prepared placement(s) come directly from Appendix A instead.",
+    classSources: classSourcesFor(directListings)
   };
 }
 

@@ -148,3 +148,32 @@ describe("getVehicleMapping submodel-word ambiguity guard", () => {
     expect(matchedFamilies).not.toContain("TT");
   });
 });
+
+describe("getVehicleMapping for vehicles with no Street-category placement", () => {
+  it("resolves a Street Prepared class directly for a vehicle Appendix A never places in Street at all", () => {
+    // The Chevrolet Chevelle (1964-67) has an ESP Street Prepared listing but no
+    // Street-category counterpart anywhere in Appendix A -- the rulebook structure
+    // itself classes some vintage platforms straight into a preparation category.
+    // Requiring a Street placement first would make this permanently unreachable.
+    const chevelle = getVehicleMapping({
+      make: "Chevrolet",
+      model: "Chevelle",
+      year: "older",
+      variant: "Chevelle (1964-67)"
+    });
+    expect(chevelle?.classes).toEqual(["esp"]);
+    expect(chevelle?.classSources?.esp?.description).toBe("Chevelle (1964-67)");
+  });
+
+  it("still refuses to guess when real Street listings exist but are ambiguous, instead of falling through to an easier-to-resolve category", () => {
+    // Regression guard: Honda S2000 has two real Street listings (AS for the CR
+    // package, CS otherwise), so bare "S2000" with no package specified is a genuine
+    // Street-level ambiguity -- NOT a "no Street placement exists" case. It must keep
+    // resolving to no mapping at all rather than silently recommending Street
+    // Prepared (CSP, which doesn't split by package) just because that category
+    // happened to be easier to pin down. Confirming the correct Street class always
+    // takes priority over guessing into a different category.
+    const ambiguous = getVehicleMapping({ make: "Honda", model: "S2000", year: "2008" });
+    expect(ambiguous).toBeNull();
+  });
+});
