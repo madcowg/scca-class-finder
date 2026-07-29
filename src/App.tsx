@@ -151,11 +151,11 @@ export default function App() {
 
         <nav className="progress-nav" aria-label="Classification steps">
           {[
-              [1, "Vehicle", "Year, make, model"],
-            [2, "Build", "Preparation details"],
-            [3, "Review", "Check your inputs"],
-            [4, "Result", "Class and rule path"]
-          ].map(([step, title, description]) => {
+            [1, "Vehicle"],
+            [2, "Build"],
+            [3, "Review"],
+            [4, "Result"]
+          ].map(([step, title]) => {
             const stepNumber = step as Step;
             return (
               <button
@@ -168,7 +168,6 @@ export default function App() {
               >
                 <span>{stepNumber}</span>
                 <strong>{title}</strong>
-                <small>{description}</small>
               </button>
             );
           })}
