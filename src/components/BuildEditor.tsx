@@ -108,9 +108,7 @@ export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
       <div className="panel-heading">
         <div className="step-number">2</div>
         <div>
-          <p className="eyebrow">Preparation legality</p>
-          <h2 id="build-title">Describe the complete build</h2>
-          <p>The highest-impact modification controls. Select "unknown" rather than guessing.</p>
+          <h2 id="build-title">Build</h2>
         </div>
       </div>
 
@@ -215,10 +213,10 @@ export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
 
       <div className="wizard-actions">
         <button className="secondary-button" type="button" onClick={onBack}>
-          Back: vehicle
+          Vehicle
         </button>
         <button className="primary-button" type="button" onClick={onNext}>
-          Next: review
+          Review
         </button>
       </div>
     </section>

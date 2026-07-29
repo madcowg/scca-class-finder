@@ -33,9 +33,7 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
       <div className="panel-heading">
         <div className="step-number">3</div>
         <div>
-          <p className="eyebrow">Review</p>
-          <h2 id="review-title">Check the exact car and selected build facts</h2>
-          <p>Confirm the exact vehicle and the build details before opening the classification result.</p>
+          <h2 id="review-title">Review</h2>
         </div>
       </div>
 
@@ -75,10 +73,10 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
 
       <div className="wizard-actions">
         <button className="secondary-button" type="button" onClick={onBack}>
-          Back: build details
+          Build
         </button>
         <button className="primary-button" type="button" onClick={onNext}>
-          Show classification result
+          Result
         </button>
       </div>
     </section>

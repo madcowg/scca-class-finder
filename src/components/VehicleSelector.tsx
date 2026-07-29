@@ -65,12 +65,7 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
       <div className="panel-heading">
         <div className="step-number">1</div>
         <div>
-          <p className="eyebrow">Start here</p>
-          <h2 id="vehicle-title">Choose the exact vehicle</h2>
-          <p>
-            Start with the model year. We then narrow the make, model family, and any year-specific
-            submodel or package so the exact car is identified before the build is evaluated.
-          </p>
+          <h2 id="vehicle-title">Vehicle</h2>
         </div>
       </div>
 
@@ -180,7 +175,7 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
 
       <div className="wizard-actions wizard-actions-end">
         <button className="primary-button" type="button" onClick={onNext} disabled={!canAdvance}>
-          Next: build details
+          Build
         </button>
       </div>
     </section>
