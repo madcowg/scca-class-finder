@@ -197,6 +197,8 @@ function identityText(value: string): string {
     .replace(/\bmazdaspeed\b/g, "mazda speed")
     .replace(/\bmx[\s-]?5(?:\s+miata)?\b/g, "mx5")
     .replace(/\bs2000[\s-]?cr\b/g, "s2000 cr")
+    .replace(/\bjohn cooper works\b/g, "jcw")
+    .replace(/\b\d\s*-?\s*door(?:s)?\b/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\b(\d+)\s+([a-z])\b/g, "$1$2")
     .replace(/\b([a-z])\s+(\d+)\b/g, "$1$2")
@@ -222,6 +224,7 @@ const BODY_STYLE_TOKENS = new Set([
   "cabrio",
   "cabriolet",
   "roadster",
+  "targa",
   "sportswagon",
   "gt",
   "gran",
@@ -917,7 +920,25 @@ function isGenericFamilyCatchAll(listing: AppendixListing, family: string): bool
   if (!listing.description.includes("(")) return true;
 
   const parenContents = [...listing.description.matchAll(/\(([^)]*)\)/g)].map((match) => match[1]);
+
+  // A bracket can list several chassis codes together with the word "chassis" appearing only
+  // once at the end (e.g. "E63/E64, F12/F13, & G32 chassis"), rather than once per code.
+  // Comma-splitting that as ordinary clauses would leave every code but the last without its
+  // own trailing "chassis" word and wrongly read as a positively-named trim. Check each
+  // bracket as a whole for "nothing but chassis codes and separators, plus the word chassis"
+  // first, before falling back to per-clause classification for brackets that aren't that.
+  const isChassisCodeOnlyBracket = (bracketContent: string): boolean => {
+    if (!/\bchassis\b/i.test(bracketContent)) return false;
+    const codes = bracketContent
+      .replace(/\bchassis\b/gi, "")
+      .split(/[,/&;]/)
+      .map((code) => clean(code))
+      .filter(Boolean);
+    return codes.length > 0 && codes.every((code) => /^[a-z]+\d[a-z0-9]*$/i.test(code));
+  };
+
   const clauses = parenContents
+    .filter((content) => !isChassisCodeOnlyBracket(content))
     .flatMap((content) => content.split(/[,;]/))
     .map((clause) => clean(clause))
     .filter(Boolean);
