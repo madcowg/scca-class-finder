@@ -221,6 +221,7 @@ function rulebookVariantIdentity(description: string): string {
     .replace(/\b(?:19|20)?\d{2}(?:1\/2)?\s*-\s*(?:19|20)?\d{2}\b/g, "")
     .replace(/\b(?:19|20)\d{2}\b/g, "")
     .replace(/\(\s*all\s*\)/gi, "")
+    .replace(/\(\s*all\s*,\s*(?:excl(?:uding)?|non-?)[^)]*\)/gi, "")
     .replace(/\((?:inc(?:l(?:uding)?)?|excl(?:uding)?)[^)]*\)/gi, "")
     .replace(/\b(?:inc(?:l(?:uding)?)?|excl(?:uding)?)\b.*$/gi, "")
     .replace(/\bchassis\b/gi, "")

@@ -124,10 +124,10 @@ if (street.reachedExplicitYearListings !== street.explicitYearListings) {
   throw new Error("One or more explicitly year-bounded Street listings are unreachable");
 }
 
-if (streetTouring.reachedExactListings / streetTouring.exactListings < 0.76) {
-  throw new Error("Exact official Street Touring selector reachability fell below 76%");
+if (streetTouring.reachedExactListings / streetTouring.exactListings < 0.78) {
+  throw new Error("Exact official Street Touring selector reachability fell below 78%");
 }
 
-if (streetPrepared.reachedExactListings / streetPrepared.exactListings < 0.61) {
-  throw new Error("Exact official Street Prepared selector reachability fell below 61%");
+if (streetPrepared.reachedExactListings / streetPrepared.exactListings < 0.63) {
+  throw new Error("Exact official Street Prepared selector reachability fell below 63%");
 }

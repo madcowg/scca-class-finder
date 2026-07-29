@@ -39,6 +39,23 @@ describe("getVehicleMapping Street Touring / Street Prepared relation matching",
   });
 });
 
+describe("getVehicleMapping year-evidence for 'all, excl.' qualifiers", () => {
+  it("treats 'Golf (all, excl. R)' as sufficient year evidence instead of leaving it unreachable", () => {
+    // Street HS "Golf (all, excl. R)" has no year range. Its qualifier reads
+    // as "every Golf/GTI except R", not a specific named trim, so it must not
+    // be treated as failing to match plain "Golf" the way a real
+    // distinguishing trim qualifier would -- this used to resolve to no
+    // mapping at all for every year/variant of this selection.
+    const golf2016 = getVehicleMapping({
+      make: "Volkswagen",
+      model: "Golf",
+      year: "2016",
+      variant: "Golf (all, excl. R)"
+    });
+    expect(golf2016?.classes).toEqual(expect.arrayContaining(["hs", "gst"]));
+  });
+});
+
 describe("getVehicleMapping Acura NSX Street placement", () => {
   it("splits the regular NSX from the rare 1999 Zanardi Signature Edition instead of returning an ambiguous null", () => {
     const regular = getVehicleMapping({
