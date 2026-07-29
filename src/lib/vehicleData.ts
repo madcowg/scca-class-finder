@@ -225,7 +225,10 @@ const BODY_STYLE_TOKENS = new Set([
   "sportswagon",
   "gt",
   "gran",
-  "turismo"
+  "turismo",
+  "sports",
+  "ffv",
+  "plus"
 ]);
 
 // AWD-system marketing suffixes. A listing that names a base trim without any of these
@@ -928,6 +931,9 @@ function isGenericFamilyCatchAll(listing: AppendixListing, family: string): bool
     if (/^[a-z]+\d[a-z0-9]*\s+chassis$/i.test(clause)) return true;
     if (/^chassis$/i.test(clause)) return true;
     if (/^\*?\s*limited prep$/i.test(clause)) return true;
+    // Engine-cylinder-count descriptors (e.g. "6-cyl", "4-cyl", "V6", "V8") describe the
+    // whole catch-all generically rather than naming one specific alternate trim.
+    if (/^(?:\d\s*-?\s*cyl(?:inder)?|v\d+)$/i.test(clause)) return true;
     return false;
   };
 
