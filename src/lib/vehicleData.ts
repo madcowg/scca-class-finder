@@ -366,7 +366,7 @@ function reviewedFamily(entry: ReviewedEntry): string {
   return entry.model;
 }
 
-function familiesForYear(make: string, year: string): string[] {
+export function familiesForYear(make: string, year: string): string[] {
   const canonicalMakeName = canonicalMake(make);
   const families = new Set(productionModelsFor(canonicalMakeName, year));
 
@@ -547,7 +547,7 @@ function productionVariantsFor(make: string, family: string, year: string): stri
   return familyKey ? productionVehicles[year]?.[makeKey]?.[familyKey] ?? [] : [];
 }
 
-function rulebookFamiliesForListing(
+export function rulebookFamiliesForListing(
   make: string,
   listing: AppendixListing,
   year: string,
@@ -578,14 +578,30 @@ function rulebookFamiliesForListing(
   if (aliasMatches.length > 0) return uniqueSorted(aliasMatches);
 
   const listingIdentity = rulebookIdentity(listing.description);
+  // Loose containment is unsafe when a listing's identity is a submodel/trim word that fans
+  // out across many otherwise-unrelated families' own production variant strings for this
+  // make -- e.g. "quattro" is Audi's AWD-drivetrain suffix, reused in "A4 quattro", "A6
+  // quattro", "TT quattro" alike, so a vintage listing whose whole name is just "Quattro"
+  // (the 1980s coupe) would otherwise spuriously match nearly every current-year Audi family.
+  // A word tied to essentially one family (e.g. "CLK55", "Spider") doesn't have that fan-out
+  // and should still match loosely. So: count how many DISTINCT families' variants this
+  // listing's identity loosely relates to; only trust the loose match when that's at most one
+  // family (no real ambiguity to resolve). A submodel name is never enough on its own to prove
+  // which family/year a listing belongs to when it's this widely shared -- exact equality
+  // against a family's own variant text is still always trusted, ambiguous or not.
+  const familiesLooselyRelatedToListing = families.filter((candidateFamily) =>
+    productionVariantsFor(canonicalMakeName, candidateFamily, year).some((variant) => {
+      const variantIdentity = rulebookIdentity(variant);
+      return containsIdentity(variantIdentity, listingIdentity) || containsIdentity(listingIdentity, variantIdentity);
+    })
+  );
+  const listingIdentityIsAmbiguousAcrossFamilies = familiesLooselyRelatedToListing.length > 1;
   const productionMatches = families.filter((family) =>
     productionVariantsFor(canonicalMakeName, family, year).some((variant) => {
       const variantIdentity = rulebookIdentity(variant);
-      return (
-        variantIdentity === listingIdentity ||
-        containsIdentity(variantIdentity, listingIdentity) ||
-        containsIdentity(listingIdentity, variantIdentity)
-      );
+      if (variantIdentity === listingIdentity) return true;
+      if (listingIdentityIsAmbiguousAcrossFamilies) return false;
+      return containsIdentity(variantIdentity, listingIdentity) || containsIdentity(listingIdentity, variantIdentity);
     })
   );
   return uniqueSorted(productionMatches);
