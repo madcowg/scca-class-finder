@@ -116,18 +116,18 @@ console.log(
   )
 );
 
-if (street.reachedExactListings / street.exactListings < 0.95) {
-  throw new Error("Exact official Street selector reachability fell below 95%");
+if (street.reachedExactListings / street.exactListings < 0.98) {
+  throw new Error("Exact official Street selector reachability fell below 98%");
 }
 
 if (street.reachedExplicitYearListings !== street.explicitYearListings) {
   throw new Error("One or more explicitly year-bounded Street listings are unreachable");
 }
 
-if (streetTouring.reachedExactListings / streetTouring.exactListings < 0.73) {
-  throw new Error("Exact official Street Touring selector reachability fell below 73%");
+if (streetTouring.reachedExactListings / streetTouring.exactListings < 0.76) {
+  throw new Error("Exact official Street Touring selector reachability fell below 76%");
 }
 
-if (streetPrepared.reachedExactListings / streetPrepared.exactListings < 0.58) {
-  throw new Error("Exact official Street Prepared selector reachability fell below 58%");
+if (streetPrepared.reachedExactListings / streetPrepared.exactListings < 0.61) {
+  throw new Error("Exact official Street Prepared selector reachability fell below 61%");
 }

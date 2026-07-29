@@ -609,24 +609,36 @@ function rulebookListingHasYearEvidence(
   }
 
   if (
-    reviewedVariantsFor(make, family, year).some(
-      (entry) =>
-        rulebookVariantIdentity(`${family} ${entry.variant ?? entry.model}`) ===
-        listingIdentity
-    )
+    reviewedVariantsFor(make, family, year).some((entry) => {
+      const variantText = entry.variant ?? entry.model;
+      // A reviewed variant is usually a short suffix ("Type S") meant to be
+      // prefixed with the family name, but it is sometimes the full official
+      // wording already ("NSX Alex Zanardi Signature Edition"), which would
+      // otherwise double the family name when prefixed. Check both forms.
+      return (
+        rulebookVariantIdentity(`${family} ${variantText}`) === listingIdentity ||
+        rulebookVariantIdentity(variantText) === listingIdentity
+      );
+    })
   ) {
     return true;
   }
 
-  return Object.entries(rawMakeEntries(make)).some(([sourceModel, years]) => {
-    if (
-      rulebookVariantIdentity(removeMakePrefix(make, sourceModel)) !==
-      rulebookVariantIdentity(listing.description)
-    ) {
-      return false;
-    }
-    return Object.keys(years).some((yearKey) => explicitYearKeyApplies(yearKey, year));
-  });
+  if (
+    Object.entries(rawMakeEntries(make)).some(([sourceModel, years]) => {
+      if (
+        rulebookVariantIdentity(removeMakePrefix(make, sourceModel)) !==
+        rulebookVariantIdentity(listing.description)
+      ) {
+        return false;
+      }
+      return Object.keys(years).some((yearKey) => explicitYearKeyApplies(yearKey, year));
+    })
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function positiveIdentityTokens(description: string): Set<string> {
@@ -696,30 +708,45 @@ function relatedListingIsCompatible(
     .replace(/\b(?:19|20)?\d{2}(?:1\/2)?\s*-\s*(?:19|20)?\d{2}\b/g, "")
     .replace(/\b(?:19|20)\d{2}\b/g, "")
     .replace(/\bLimited Prep\b/gi, "");
-  const requiredTokens = identityText(qualifier)
+  // "non X" inside a qualifier excludes trim X from the candidate rather than
+  // requiring the street listing to positively name X, so both the "non"
+  // token and the token it negates are dropped -- not just "non" alone. A
+  // street row rarely repeats a rare excluded trim by name (e.g. the BS
+  // "M3 & M4 (F80/F82 chassis; non-CS)" row doesn't mention "GTS" at all,
+  // yet the SST row "... non-CS, non-GTS ..." for the exact same cars must
+  // still relate to it).
+  const qualifierTokens = identityText(qualifier)
     .replace(/\b(\d+)\s+0l\b/g, "$1 0")
-    .split(" ")
-    .filter(
-      (token) =>
-        token.length > 1 &&
-        !/^\d+$/.test(token) &&
-        ![
-          "all",
-          "and",
-          "chassis",
-          "cyl",
-          "cylinder",
-          "edition",
-          "engine",
-          "model",
-          "models",
-          "non",
-          "only",
-          "or",
-          "package",
-          "prep"
-        ].includes(token)
-    );
+    .split(" ");
+  const requiredTokens: string[] = [];
+  for (let index = 0; index < qualifierTokens.length; index += 1) {
+    const token = qualifierTokens[index];
+    if (token === "non") {
+      index += 1;
+      continue;
+    }
+    if (
+      token.length > 1 &&
+      !/^\d+$/.test(token) &&
+      ![
+        "all",
+        "and",
+        "chassis",
+        "cyl",
+        "cylinder",
+        "edition",
+        "engine",
+        "model",
+        "models",
+        "only",
+        "or",
+        "package",
+        "prep"
+      ].includes(token)
+    ) {
+      requiredTokens.push(token);
+    }
+  }
   const chassisTokens = requiredTokens.filter((token) =>
     /^(?:c\d+|e\d+|f\d+|g\d+|w\d+|r\d+|s\d+|mk\d+|na|nb|nc|nd)$/i.test(token)
   );
@@ -828,7 +855,15 @@ function relatedOfficialListings(
         rulebookYearApplies(listing, selection.year) &&
         (candidateIdentity === streetIdentity ||
           containsIdentity(candidateIdentity, streetIdentity) ||
-          containsIdentity(streetIdentity, candidateIdentity)) &&
+          containsIdentity(streetIdentity, candidateIdentity) ||
+          // A Street row sometimes names the shared family and lists its
+          // specific trims only in its own qualifier, e.g. BMW's DS row
+          // "2 Series (228i, 230i) (4-cyl Turbo; F22 chassis)" versus the
+          // BST row named directly "228i" -- neither pre-qualifier identity
+          // is a substring of the other, but the candidate's identity is
+          // still positively named inside the street row's full text.
+          containsIdentity(streetListing.description, candidateIdentity) ||
+          containsIdentity(listing.description, streetIdentity)) &&
         relatedListingIsCompatible(streetListing, listing) &&
         rulebookFamiliesForListing(
           selection.make,

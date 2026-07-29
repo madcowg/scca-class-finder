@@ -38,5 +38,20 @@
   { "make": "Chevrolet", "model": "Corvette", "variant": "C8 Z06 (including Z07 package)", "year": "2025", "classes": ["ss"], "aliases": ["C8 Z06", "Corvette Z06 (C8)", "C8 Z06 (including Z07 package)"], "source": "verified-classes" },
   { "make": "Chevrolet", "model": "Corvette", "variant": "C8 Z06 (including Z07 package)", "year": "2026", "classes": ["ss"], "aliases": ["C8 Z06", "Corvette Z06 (C8)", "C8 Z06 (including Z07 package)"], "source": "verified-classes" },
   { "make": "Hyundai", "model": "Ioniq 5", "variant": "N", "year": "2025", "classes": ["ss", "evx"], "aliases": ["IONIQ 5 N"], "source": "verified-classes" },
-  { "make": "Hyundai", "model": "Ioniq 5", "variant": "N", "year": "2026", "classes": ["ss"], "aliases": ["IONIQ 5 N", "Ioniq 5 N"], "source": "verified-classes" }
+  { "make": "Hyundai", "model": "Ioniq 5", "variant": "N", "year": "2026", "classes": ["ss"], "aliases": ["IONIQ 5 N", "Ioniq 5 N"], "source": "verified-classes" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "1991", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "1992", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "1993", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "1994", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "1995", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "1996", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "1998", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "1999", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2000", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2001", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2002", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2003", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2004", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2005", "classes": ["bs"], "source": "street-only" },
+  { "make": "Acura", "model": "NSX", "variant": "NSX Alex Zanardi Signature Edition", "year": "1999", "classes": ["as"], "source": "street-only" }
 ]
