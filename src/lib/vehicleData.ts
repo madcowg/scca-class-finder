@@ -255,7 +255,6 @@ function rulebookVariantIdentity(description: string): string {
     .replace(/\b(?:19|20)\d{2}\b/g, "")
     .replace(/\(\s*all\s*\)/gi, "")
     .replace(/\(\s*all\s*,\s*(?:excl(?:uding)?|non-?)[^)]*\)/gi, "")
-    .replace(/\((?:inc(?:l(?:uding)?)?|excl(?:uding)?)[^)]*\)/gi, "")
     // "excl X" drops X entirely (X is NOT covered by this listing, so it must not survive as
     // a matchable token) -- bounded to the next comma/semicolon/paren, not to the end of the
     // whole string, since one row can list several unrelated exclusions or trims in sequence.
@@ -659,6 +658,29 @@ function rulebookListingHasYearEvidence(
   if (year === "older" || listing.yearRanges.length > 0) return true;
   const listingIdentity = rulebookVariantIdentity(listing.description);
   if (listingIdentity === identityText(family)) return true;
+  // rulebookIdentity truncates at the listing's first parenthetical, so this also accepts a
+  // listing whose base name is just the bare family (e.g. "Sonata (incl. N-Line)") even when
+  // its qualifier -- preserved in rulebookVariantIdentity for matching purposes elsewhere --
+  // keeps positively-named content like "N-Line" that isn't itself a real EPA/reviewed
+  // variant string, which would otherwise fail this check for every year. Only trust this when
+  // the listing has NO sibling at all sharing the same bare identity in this category --
+  // year-bound (e.g. Acura's vintage "NSX (non-Zanardi Edition)" has a sibling "NSX
+  // (2017-21)") or not (e.g. Volvo has both a bare "S40" and a separate "S40 (non-T5)" row,
+  // both year-range-less -- genuinely ambiguous by name alone, since neither the base family
+  // nor a plain drivetrain suffix says whether a given car has the T5 turbo). Otherwise this
+  // row might really be scoped to a specific era or sub-trim distinguishable only via the
+  // reviewed catalog's own year field or exact wording, and blanket-trusting it would either
+  // leak it into every model year or manufacture a false single match out of a real ambiguity.
+  if (rulebookIdentity(listing.description) === identityText(family)) {
+    const hasSiblingWithSameIdentity = appendixListings.some(
+      (candidate) =>
+        candidate !== listing &&
+        candidate.category === listing.category &&
+        rulebookListingMatchesMake(candidate, make) &&
+        rulebookIdentity(candidate.description) === identityText(family)
+    );
+    if (!hasSiblingWithSameIdentity) return true;
+  }
 
   if (
     productionVariantsFor(make, family, year).some(
@@ -785,9 +807,17 @@ function relatedListingIsCompatible(
       index += 1;
       continue;
     }
+    // A truncated displacement-plus-turbo-marker code (e.g. "8t" from "1.8T", "0t" from
+    // "2.0T") is a more SPECIFIC instance of a street row's generic engine wording ("4-cyl
+    // Turbo"), not a distinct exclusion -- requiring it verbatim would treat every specific
+    // turbo engine size as incompatible with a row that only describes the engine family
+    // generically. Scoped to a trailing "t" specifically (not any trailing letter) so a real
+    // displacement-with-unit code like "2l"/"3.2L" -- a meaningful, distinguishing engine
+    // size, not a restatement of "turbo" -- still stays required.
     if (
       token.length > 1 &&
       !/^\d+$/.test(token) &&
+      !/^\d+t$/i.test(token) &&
       ![
         "all",
         "and",
