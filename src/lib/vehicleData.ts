@@ -1367,7 +1367,16 @@ export function getVehicleVariants(
     const officialMatches = official.filter((listing) =>
       rulebookVariantMatches(listing, productionVariant, family)
     );
-    if (matches.length === 1 || officialMatches.length === 1) continue;
+    // Skip whenever ANY official listing(s) relate to this EPA/production trim name -- not
+    // only when exactly one does. When more than one official listing textually applies (e.g.
+    // Porsche's mid-model-year 991.1/991.2 chassis transition: Appendix A's own row for each
+    // chassis positively lists plain "Carrera" among its trims), the generic production name
+    // is genuinely ambiguous between them and can only ever resolve to null -- but each of
+    // those official listings is ALREADY offered as its own distinct, correctly-disambiguated
+    // variant (with its year range/chassis code in the label) via the `official` loop above.
+    // Adding the bare, unresolvable name as a third option alongside two working ones is not a
+    // real choice; it is a guaranteed dead end that shadows the two selections that do work.
+    if (matches.length === 1 || officialMatches.length >= 1) continue;
     if (
       (reviewed.length > 0 || official.length > 0) &&
       normalized(productionVariant) === normalized(family)

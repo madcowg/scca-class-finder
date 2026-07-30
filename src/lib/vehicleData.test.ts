@@ -357,3 +357,32 @@ describe("getVehicleMapping resolves a family's other members once a sibling tri
     expect(car?.classSources?.dsp?.description).toBe("Mustang Shelby GT500 (2020-22) *Limited Prep");
   });
 });
+
+describe("getVehicleVariants suppresses generic trim names that can only ever resolve ambiguously", () => {
+  it("does not offer a bare '911 Carrera' for 2016, where Porsche's mid-year 991.1/991.2 chassis transition means the plain EPA trim name is positively listed by two different Street rows with two different classes", () => {
+    // Regression guard for a real selector bug, not a matching bug: Appendix A's 991.1 row
+    // ("911 (991.1 Carrera, 4, S, 4S, GTS, 4 GTS) (2012-16)", class AS) and 991.2 row ("911
+    // (991.2 Carrera, T, 4, S, 4S, GTS, 4 GTS, GT3, Turbo, ...) (2015-19)", class SS) both
+    // positively list plain "Carrera" among their trims, and both cover model year 2016. A
+    // bare "911 Carrera" selection is genuinely ambiguous between them (different classes),
+    // and always resolves to null -- but each chassis-specific row is ALREADY offered as its
+    // own clearly-labeled variant (year range and chassis code included), so the bare name
+    // was a guaranteed dead end shadowing two options that work. It must not be offered at all.
+    const variants = getVehicleVariants("Porsche", "911", "2016").map((v) => v.value);
+    expect(variants).not.toContain("911 Carrera");
+    expect(variants).not.toContain("911 Carrera 4S");
+    expect(variants.some((value) => value.includes("991.1"))).toBe(true);
+    expect(variants.some((value) => value.includes("991.2"))).toBe(true);
+  });
+
+  it("still resolves every offered 2016 911 variant to a real class", () => {
+    const variants = getVehicleVariants("Porsche", "911", "2016").map((v) => v.value);
+    const resolvable = variants.filter(
+      (variant) => getVehicleMapping({ make: "Porsche", model: "911", year: "2016", variant })?.classes.length
+    );
+    // "911 R" is a genuinely separate, still-unresolved case (not covered by any Street row's
+    // text at all) -- everything else offered for this year must actually resolve, since the
+    // whole point of suppressing the ambiguous generic names was to leave only working choices.
+    expect(resolvable.length).toBe(variants.length - 1);
+  });
+});
