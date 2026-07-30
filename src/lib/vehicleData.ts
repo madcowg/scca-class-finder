@@ -1686,11 +1686,20 @@ export function getVehicleVariants(
 
   // Cosmetic label cleanup: the year (or "older") was already chosen earlier in the flow, so
   // repeating a redundant date-range stamp or an irrelevant year-specific exclusion clause in
-  // every trim/package label is just visual noise. Applied only here, after every variant for
-  // this family/year is known, so a genuine collision (e.g. Audi's own "RS 3 (2017-19)" and
-  // "RS 3 (2022-26)" are two real, differently-classed generations that share the same bare
-  // name) can fall back to keeping its distinguishing date info instead of silently looking
-  // identical in the dropdown. The underlying selectable value is never touched either way.
+  // every trim/package label is just visual noise. Two OFFICIAL listings for the same family
+  // essentially never collide once stripped -- each has its own non-overlapping year range, so
+  // rulebookYearApplies already means at most one of them is ever a candidate for any single
+  // queried year (Audi's real "RS 3 (2017-19)" vs. "RS 3 (2022-26)" never both appear together;
+  // there's no year that satisfies both ranges). The real collision this guards against is a
+  // CURATED OVERRIDE entry sharing a family with an official listing: Ford's older Thunderbird
+  // has both an override variant ("Thunderbird (V8)", no year in its own text, added so the
+  // otherwise Street-ambiguous V8 case resolves at all) and the actual FS row ("Thunderbird
+  // (V8) (1955-88, 2002-05)") as two distinct selectable entries for the SAME "older" bucket --
+  // both are real, legitimately class-different-if-picked-wrong choices that would look
+  // identical once the FS row's date range is stripped. Applied only here, after every variant
+  // for this family/year is known, so that case can fall back to keeping its distinguishing
+  // date info instead of silently looking identical in the dropdown. The underlying selectable
+  // value is never touched either way.
   const cleanedLabels = new Map(
     [...variants.values()].map((variant) => [
       variant.value,
