@@ -517,3 +517,29 @@ describe("getVehicleMapping does not let a compound 'Turbo' name absorb an unrel
     expect(m340i?.classSources?.fs?.description).toContain("G20/21");
   });
 });
+
+describe("getVehicleMapping Corvette C4 transcription typo and bare-name dead end", () => {
+  it("resolves the C4 Corvette excluding LT4/ZR1 to its Street/Street Touring/Street Prepared rows", () => {
+    // src/data/vehicles.generated.json's raw catalog key literally read "Corvette (C4, all,
+    // bst excl. LT4 engine & ZR1)" -- a stray "bst" (a real classId) transcribed directly into
+    // the display text, which never matched anything since no Appendix A row phrases it that
+    // way. Fixed to "Corvette (C4, excl. LT4 engine & ZR1)", matching the official wording.
+    const c4 = getVehicleMapping({
+      make: "Chevrolet",
+      model: "Corvette",
+      year: "older",
+      variant: "Corvette (C4, excl. LT4 engine & ZR1)"
+    });
+    expect(c4?.classes).toEqual(expect.arrayContaining(["bst", "cs"]));
+  });
+
+  it("does not offer a bare 'Corvette' with no generation/qualifier once other Corvette variants exist", () => {
+    // A plain "Corvette" with no generation, engine, or chassis qualifier at all is a
+    // guaranteed dead end -- Appendix A never has one undated row spanning the whole
+    // multi-generation family -- and every real Corvette selection already has its own
+    // properly-labeled variant, so this bare name only ever shadowed working choices.
+    const variants = getVehicleVariants("Chevrolet", "Corvette", "older").map((v) => v.value);
+    expect(variants).not.toContain("Corvette");
+    expect(variants.length).toBeGreaterThan(0);
+  });
+});

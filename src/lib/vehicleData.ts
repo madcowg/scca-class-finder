@@ -1527,6 +1527,18 @@ export function getVehicleVariants(
       ) {
         continue;
       }
+      // A bare "family name only" raw source model (e.g. plain "Corvette", with no generation,
+      // engine, or chassis qualifier at all) is guaranteed ambiguous whenever ANY other listing
+      // or variant already exists for this family -- Appendix A never has just one undated,
+      // unqualified row spanning a whole multi-generation family, so this can only ever resolve
+      // to null. It would be a dead end shadowing the real, already-offered choices, exactly
+      // like the redundant EPA production-catalog names skipped above.
+      if (
+        (reviewed.length > 0 || official.length > 0) &&
+        normalized(sourceModel) === normalized(family)
+      ) {
+        continue;
+      }
       addVariant(
         variants,
         sourceModel,
