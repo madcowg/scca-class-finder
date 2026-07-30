@@ -98,6 +98,12 @@ const MODEL_FAMILY_ALIASES: Array<{
   { make: "Audi", pattern: /^TT\b/i, family: "TT Coupe" },
   { make: "Audi", pattern: /^TT\b/i, family: "TT Roadster" },
   { make: "Audi", pattern: /^TTS\b/i, family: "TTS Coupe" },
+  // Not start-anchored: Appendix A's DSP row names both performance trims in one combined
+  // listing ("S60R & V70R (R171) (2004-11)"), and each alias must resolve independently of
+  // where in the string its own trim name falls, unlike every other alias above which only
+  // ever needs to match a single family at the start of its own listing.
+  { make: "Volvo", pattern: /\bS60R\b/i, family: "S60" },
+  { make: "Volvo", pattern: /\bV70R\b/i, family: "V70" },
   { make: "Hyundai", pattern: /^Ioniq 5\b/i, family: "Ioniq 5" },
   { make: "Hyundai", pattern: /^Ionic 5\b/i, family: "Ioniq 5" },
   { make: "Lotus", pattern: /^Elise\b/i, family: "Elise/Exige" },
@@ -198,6 +204,11 @@ function identityText(value: string): string {
     .replace(/\bmx[\s-]?5(?:\s+miata)?\b/g, "mx5")
     .replace(/\bs2000[\s-]?cr\b/g, "s2000 cr")
     .replace(/\bjohn cooper works\b/g, "jcw")
+    // Volvo's own naming fuses the performance-package letter directly onto the chassis code
+    // with no separator ("S60R", "V70R"), but EPA/reviewed catalog text for the same cars
+    // always spells it as two words ("S60 R AWD") -- without this, the two representations of
+    // the identical trim never resolve to the same identity token.
+    .replace(/\b(s60|v70)\s+r\b/g, "$1r")
     .replace(/\b\d\s*-?\s*door(?:s)?\b/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\b(\d+)\s+([a-z])\b/g, "$1$2")
@@ -656,6 +667,21 @@ function rulebookListingHasYearEvidence(
   year: string
 ): boolean {
   if (year === "older" || listing.yearRanges.length > 0) return true;
+  // A curated MODEL_FAMILY_ALIASES entry already asserts, by hand, that this exact listing
+  // text belongs to this exact family (e.g. Volvo "S60R (except Polestar)" -> S60) -- that
+  // curation is itself the year evidence; no further heuristic is needed once a human has
+  // already tied the two together.
+  const canonicalMakeName = canonicalMake(make);
+  if (
+    MODEL_FAMILY_ALIASES.some(
+      (alias) =>
+        alias.make === canonicalMakeName &&
+        alias.pattern.test(removeMakePrefix(canonicalMakeName, listing.description)) &&
+        normalized(alias.family) === normalized(family)
+    )
+  ) {
+    return true;
+  }
   const listingIdentity = rulebookVariantIdentity(listing.description);
   if (listingIdentity === identityText(family)) return true;
   // rulebookIdentity truncates at the listing's first parenthetical, so this also accepts a
@@ -1074,7 +1100,15 @@ function resolveListingForSelectionInCategory(
   const classes = uniqueSorted(matches.map((listing) => listing.classId));
   return {
     listing: classes.length === 1 ? matches[0] ?? null : null,
-    hasAnyListingForFamily: true
+    // Distinct from "listings.length === 0" above: Appendix A can define a Street row for
+    // this family that positively names a DIFFERENT sibling trim entirely (e.g. Volvo's GS
+    // "S60R (except Polestar)" row exists for the S60 family, but a plain non-R "S60 & V70"
+    // selection matches none of its text) -- that is not the same situation as a genuine
+    // ambiguity between multiple listings that could each plausibly apply to this selection
+    // (Honda S2000 CR/non-CR, where "matches" still has more than one entry). Only the
+    // latter must block the no-Street-placement fallback below; a family listing that
+    // definitively does not describe this selection at all must not count against it.
+    hasAnyListingForFamily: matches.length > 0
   };
 }
 

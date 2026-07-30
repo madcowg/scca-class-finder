@@ -274,3 +274,86 @@ describe("getVehicleMapping Fiat 2000 Spider transcription typo", () => {
     expect(fiat2000Spider?.classSources?.csp?.description).not.toBe("2000 Spider Turbo");
   });
 });
+
+describe("getVehicleMapping Volvo R-badge naming (S60R/V70R fused vs. spaced)", () => {
+  it("resolves the 2004 Volvo S60 R to its Street GS listing and Street Touring BST listing", () => {
+    // Appendix A writes the performance trim with no space, "S60R (except Polestar)" and bare
+    // "S60R" -- but the reviewed/EPA catalog spells the same car "S60 R AWD". Without treating
+    // those as the same identity, this real, selectable car was entirely unclassifiable despite
+    // Appendix A covering it in two categories.
+    const variants = getVehicleVariants("Volvo", "S60", "2004").map((v) => v.value);
+    const s60rVariant = variants.find((value) => /S60R/i.test(value));
+    expect(s60rVariant).toBeDefined();
+
+    const s60r = getVehicleMapping({ make: "Volvo", model: "S60", year: "2004", variant: s60rVariant });
+    expect(s60r?.classSources?.gs?.description).toBe("S60R (except Polestar)");
+    expect(s60r?.classes).toEqual(expect.arrayContaining(["gs", "bst"]));
+  });
+
+  it("resolves the 2004 Volvo V70 R to its Street GS listing without picking up the unrelated S60-only BST row", () => {
+    const variants = getVehicleVariants("Volvo", "V70", "2004").map((v) => v.value);
+    const v70rVariant = variants.find((value) => /V70R/i.test(value));
+    expect(v70rVariant).toBeDefined();
+
+    const v70r = getVehicleMapping({ make: "Volvo", model: "V70", year: "2004", variant: v70rVariant });
+    expect(v70r?.classSources?.gs?.description).toBe("V70R (except Polestar)");
+    expect(v70r?.classes).not.toContain("bst");
+  });
+
+  it("does not let the base non-R S60/V70 trims pick up the R-only Street listing", () => {
+    // Regression guard: the fusion/alias fix must stay scoped to the actual R trim -- a plain
+    // AWD or FWD S60/V70 selection has no Street placement of its own and must keep resolving
+    // to no mapping at all, not spuriously inherit the R-only GS row.
+    const s60Awd = getVehicleMapping({ make: "Volvo", model: "S60", year: "2004", variant: "S60 AWD" });
+    expect(s60Awd).toBeNull();
+  });
+});
+
+describe("getVehicleMapping resolves a family's other members once a sibling trim gets a dedicated Street row", () => {
+  it("still resolves the base non-R 'older' S60 & V70 directly to its ESP row", () => {
+    // Regression guard for the S60R alias fix above: before it, family "S60" had NO Street
+    // listing at all (a family resolution bug), so this plain "S60 & V70" catalog entry
+    // reached ESP through the same no-Street-placement fallback Chevelle uses. Once the S60R
+    // alias correctly gives family "S60" a real (but R-specific) Street listing, this base
+    // trim must still resolve to ESP -- the fallback must key off "does any Street listing
+    // actually describe THIS selection", not "does the family have a Street listing at all".
+    const baseS60 = getVehicleMapping({ make: "Volvo", model: "S60", year: "older", variant: "S60 & V70" });
+    expect(baseS60?.classes).toEqual(["esp"]);
+    expect(baseS60?.classSources?.esp?.description).toBe("S60 & V70");
+  });
+
+  it("resolves the BMW 228i Gran Coupe to its Street Touring row", () => {
+    const car = getVehicleMapping({
+      make: "BMW",
+      model: "2 Series",
+      year: "2024",
+      variant: "228i Gran Coupe"
+    });
+    expect(car?.classSources?.bst?.description).toBe("228i Gran Coupe (FWD & AWD) (2020-26)");
+  });
+
+  it("resolves the Mercedes CLK430 to its Street Touring row", () => {
+    const car = getVehicleMapping({
+      make: "Mercedes-Benz",
+      model: "CLK-Class",
+      year: "2002",
+      variant: "CLK430"
+    });
+    expect(car?.classSources?.bst?.description).toBe("CLK430 (1999-2003)");
+  });
+
+  it("resolves the BMW Z4 sDrive35i/35is to its Street Prepared row", () => {
+    const car = getVehicleMapping({ make: "BMW", model: "Z4", year: "2013", variant: "Z4 sDrive35i" });
+    expect(car?.classSources?.ssp?.description).toBe("Z4 sDrive35i & sDrive35is (2012-13)");
+  });
+
+  it("resolves the Ford Mustang Shelby GT500 (2020-22) to its Street Prepared row", () => {
+    const car = getVehicleMapping({
+      make: "Ford",
+      model: "Mustang",
+      year: "2021",
+      variant: "Shelby GT500 Mustang"
+    });
+    expect(car?.classSources?.dsp?.description).toBe("Mustang Shelby GT500 (2020-22) *Limited Prep");
+  });
+});
