@@ -1119,6 +1119,16 @@ function officialListingForSelectionInCategory(
   return resolveListingForSelectionInCategory(selection, category).listing;
 }
 
+// Exposed for scripts/audit-selection-coverage.ts, which needs the same "does some Street
+// listing plausibly describe this EXACT selection" check officialMappingFor uses to decide
+// whether a null result is a real matching gap or the vehicle's family genuinely has no
+// applicable Street placement -- rulebookListingsForFamily alone over-counts here, since a
+// family can have a Street row for a completely different sibling trim (see the comment on
+// hasAnyListingForFamily above) without that row saying anything about this selection.
+export function hasPlausibleStreetListingForSelection(selection: VehicleSelection): boolean {
+  return resolveListingForSelectionInCategory(selection, "street").hasAnyListingForFamily;
+}
+
 function officialStreetListingForSelection(
   selection: VehicleSelection
 ): AppendixListing | null {

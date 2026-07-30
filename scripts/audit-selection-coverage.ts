@@ -3,12 +3,17 @@
 // a real user actually cares about: "for every real (year, make, model, variant) combination
 // the selector itself offers, does getVehicleMapping resolve to a class at all?"
 //
-// A null result is only EXPECTED/correct when the vehicle's family genuinely has no Street
-// listing in Appendix A at all (nothing to place it in) -- rulebookListingsForFamily's return
-// tells us that. When a Street listing DOES exist for the family/year but a specific real,
-// selectable variant still fails to resolve, that's a genuine matching bug: some real car a
-// user can select is silently unclassifiable even though the rulebook covers its family. The
-// 2011 BMW 328i was exactly this shape (fixed by isGenericFamilyCatchAll's elimination match
+// A null result is only EXPECTED/correct when this EXACT selection genuinely has no plausible
+// Street listing of its own -- hasPlausibleStreetListingForSelection (which mirrors
+// officialMappingFor's own hasAnyListingForFamily gate) tells us that. This is deliberately
+// NOT "does the family have any Street listing at all": a family can have a Street row that
+// positively names a completely different sibling trim (e.g. Volvo's GS "S60R" row exists for
+// family S60, but a plain modern "S60 B5" selection matches none of its text) without that
+// counting as coverage for this one -- treating it as coverage would misreport a genuinely
+// unclassed car as a "bug" needing a fix that doesn't exist. When a Street listing DOES plausibly
+// apply to this specific selection but it still fails to resolve, that's a genuine matching bug:
+// some real car a user can select is silently unclassifiable even though the rulebook covers it.
+// The 2011 BMW 328i was exactly this shape (fixed by isGenericFamilyCatchAll's elimination match
 // and rulebookVariantMatches's compound-identity match in vehicleData.ts).
 //
 // Usage: npm run audit:selections [-- --out=path.json]
@@ -19,7 +24,7 @@ import {
   getVehicleMapping,
   getVehicleVariants,
   getYears,
-  rulebookListingsForFamily
+  hasPlausibleStreetListingForSelection
 } from "../src/lib/vehicleData";
 import { writeFileSync } from "node:fs";
 
@@ -40,16 +45,20 @@ for (const year of getYears()) {
     for (const model of getModels(make, year)) {
       const variants = getVehicleVariants(make, model, year);
       const choices = variants.length > 0 ? variants.map((variant) => variant.value) : [undefined];
-      const hasStreetListingForFamily = rulebookListingsForFamily(make, model, year, "street").length > 0;
 
       for (const variant of choices) {
         totalSelections += 1;
-        const mapping = getVehicleMapping({ year, make, model, variant });
+        const selection = { year, make, model, variant };
+        const mapping = getVehicleMapping(selection);
         if (mapping) {
           resolvedSelections += 1;
           continue;
         }
-        if (!hasStreetListingForFamily) {
+        // "Does this EXACT selection have a plausible Street listing" -- not "does the family
+        // have any Street listing at all". A family can have a Street row for a completely
+        // different sibling trim (e.g. Volvo's GS "S60R" row exists for family S60, but says
+        // nothing about a plain modern "S60 B5") without that counting as coverage for this one.
+        if (!hasPlausibleStreetListingForSelection(selection)) {
           expectedUnresolved += 1;
           continue;
         }
