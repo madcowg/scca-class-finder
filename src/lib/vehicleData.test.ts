@@ -442,3 +442,38 @@ describe("resolveListingForSelectionInCategory tie-breaks a false loose-match am
     expect(mini?.classSources?.esp?.description).toContain("Cooper S");
   });
 });
+
+describe("getVehicleMapping spelled-out 'Not Otherwise Classified' vs. Appendix A's 'NOC' abbreviation", () => {
+  it("resolves the Camaro V8 non-supercharged NOC trim to its Street row", () => {
+    // Appendix A abbreviates this listing "Camaro (V8 non-supercharged, NOC)", but the
+    // catalog spells it out in full. Ford's older Camaro family also has an unrelated HS row,
+    // "Camaro (4-cyl & 6-cyl)", that reduces to the same bare "Camaro" identity -- so this only
+    // resolves once "not otherwise classified" and "NOC" are recognized as the same token,
+    // letting the tie-breaker's token-coverage check correctly prefer the V8 row.
+    const camaro = getVehicleMapping({
+      make: "Chevrolet",
+      model: "Camaro",
+      year: "older",
+      variant: "Camaro (V8 non-supercharged, not otherwise classified)"
+    });
+    expect(camaro?.classSources?.fs?.description).toBe("Camaro (V8 non-supercharged, NOC)");
+    expect(camaro?.classSources?.hs).toBeUndefined();
+  });
+
+  it("does not let the 'NOC' synonym hijack family resolution for Renault's own unrelated 'Not Otherwise Classified' legacy model", () => {
+    // Regression guard: an earlier version of this fix normalized "not otherwise classified"
+    // in the SHARED identityText function (used for family names too), which made Renault's
+    // raw legacy catalog -- which happens to have its own distinct family literally named
+    // "Not Otherwise Classified" -- spuriously outrank the real "R-5" family in
+    // rulebookFamiliesForListing's longest-match tiebreak for the FSP "R-5 (NOC) & LeCar" row,
+    // since "Not Otherwise Classified" normalized to a longer identity match than "R-5". The
+    // fix must stay scoped to rulebookVariantIdentity (description/variant text only).
+    const renault = getVehicleMapping({
+      make: "Renault",
+      model: "R-5",
+      year: "older",
+      variant: "R-5 (Not Otherwise Classified) & LeCar"
+    });
+    expect(renault?.classSources?.fsp?.description).toBe("R-5 (NOC) & LeCar");
+  });
+});

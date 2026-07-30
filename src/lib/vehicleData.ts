@@ -261,6 +261,13 @@ function rulebookIdentity(description: string): string {
 
 function rulebookVariantIdentity(description: string): string {
   const withoutYears = description
+    // Scoped here (not in the shared identityText) because a raw legacy-catalog family can be
+    // literally named "Not Otherwise Classified" (e.g. Renault's own miscellaneous-model
+    // bucket) -- normalizing that in identityText would make ANY listing merely containing
+    // "(NOC)" spuriously outrank a car's real family in rulebookFamiliesForListing's
+    // longest-match tiebreak, hijacking family resolution. Description/variant TEXT is safe to
+    // normalize, since a real selectable car is never itself named "Not Otherwise Classified".
+    .replace(/\bnot otherwise classified\b/gi, "NOC")
     .replace(/\*?\s*Limited Prep\b/gi, "")
     .replace(/\b(?:19|20)?\d{2}(?:1\/2)?\s*-\s*(?:19|20)?\d{2}\b/g, "")
     .replace(/\b(?:19|20)\d{2}\b/g, "")
