@@ -53,5 +53,12 @@
   { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2003", "classes": ["bs"], "source": "street-only" },
   { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2004", "classes": ["bs"], "source": "street-only" },
   { "make": "Acura", "model": "NSX", "variant": "NSX (non-Zanardi Edition)", "year": "2005", "classes": ["bs"], "source": "street-only" },
-  { "make": "Acura", "model": "NSX", "variant": "NSX Alex Zanardi Signature Edition", "year": "1999", "classes": ["as"], "source": "street-only" }
+  { "make": "Acura", "model": "NSX", "variant": "NSX Alex Zanardi Signature Edition", "year": "1999", "classes": ["as"], "source": "street-only" },
+  { "make": "Ford", "model": "Thunderbird", "variant": "Thunderbird (V8)", "year": "older", "classes": ["fs"], "source": "verified-classes" },
+  { "make": "Ford", "model": "Thunderbird", "variant": "Thunderbird (V6 non-Supercharged)", "year": "older", "classes": ["hs"], "source": "verified-classes" },
+  { "make": "Ford", "model": "Thunderbird", "variant": "Thunderbird (V6 Supercharged)", "year": "older", "classes": ["gs"], "source": "verified-classes" },
+  { "make": "Mercury", "model": "Cougar", "variant": "Cougar (V8)", "year": "older", "classes": ["fs"], "source": "verified-classes" },
+  { "make": "Mercury", "model": "Capri", "variant": "Capri (non-US)", "year": "older", "classes": ["hs"], "source": "verified-classes" },
+  { "make": "Mercury", "model": "Capri", "variant": "Capri (6-cyl)", "year": "older", "classes": ["hs"], "source": "verified-classes" },
+  { "make": "Porsche", "model": "911", "variant": "911 (non-Turbo)", "year": "older", "classes": ["cs"], "source": "verified-classes" }
 ]

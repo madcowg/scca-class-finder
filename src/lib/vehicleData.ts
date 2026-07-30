@@ -1385,7 +1385,42 @@ function officialMappingFor(selection: VehicleSelection): VehicleMapping | null 
   // own -- a car that hasn't been confirmed for its correct Street class shouldn't get
   // recommended into a different category just because that category's placement was
   // easier to pin down.
-  if (streetResolution.hasAnyListingForFamily) return null;
+  //
+  // A curated override is the one exception: findReviewedEntry already requires an EXACT
+  // make/model/year/variant match (falling back to null on anything ambiguous), so its
+  // presence here means a human has specifically verified this car's classes against the
+  // real rulebook -- e.g. several vintage families genuinely have two or three Street rows
+  // that all textually apply to the same bare trim name with no further distinguishing text
+  // (Ford Thunderbird/Mercury Cougar's dedicated-V8 row vs. their own "V8 & V6 Supercharged"
+  // combined row for an adjacent year range; Mercury Capri's "all except V8" row needing
+  // outside knowledge that non-US/6-cylinder Capris were never factory V8). No amount of
+  // text-matching can resolve those from Appendix A's wording alone. Trust the override
+  // exactly as much as the merge path above already does when a Street listing DID resolve.
+  if (streetResolution.hasAnyListingForFamily) {
+    if (!curated) return null;
+    const curatedClasses = uniqueSorted(curated.classes.map((classId) => classId.toLowerCase()));
+    // Cite the actual Appendix A row for each curated class, the same way the normal
+    // resolution path does, rather than leaving the override's classes uncited -- a human
+    // picked these classIds by reading a specific row, so that row should still be the
+    // traceable source shown to the user, not just the override's own general sourceNote.
+    const candidateListings = rulebookListingsForFamily(
+      selection.make,
+      selection.model,
+      selection.year,
+      "street"
+    );
+    const citedListings = curatedClasses
+      .map((classId) => candidateListings.find((listing) => listing.classId === classId))
+      .filter((listing): listing is AppendixListing => Boolean(listing));
+    return {
+      selection: { ...selection, variant: selection.variant ?? curated.variant },
+      classes: curatedClasses,
+      source: "2026-rulebook-appendix-a",
+      coverage: "verified-classes",
+      sourceNote: curated.sourceNote,
+      classSources: classSourcesFor(citedListings)
+    };
+  }
 
   const directTouring = officialListingForSelectionInCategory(selection, "streetTouring");
   const directPrepared = officialListingForSelectionInCategory(selection, "streetPrepared");

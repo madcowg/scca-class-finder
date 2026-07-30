@@ -117,7 +117,7 @@ const reviewedFamilies = new Set();
 
 for (const entry of reviewed) {
   const label = `${entry.make} ${entry.model} ${entry.variant ?? ""} ${entry.year}`.trim();
-  if (!entry.make || !entry.model || !/^\d{4}$/.test(entry.year)) {
+  if (!entry.make || !entry.model || !/^(?:\d{4}|older)$/.test(entry.year)) {
     throw new Error(`Invalid reviewed vehicle identity: ${label}`);
   }
   if (entry.model.includes("(") || entry.model.includes("/")) {

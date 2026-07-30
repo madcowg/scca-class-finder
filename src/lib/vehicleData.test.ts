@@ -578,3 +578,66 @@ describe("getVehicleMapping recognizes 'V8'/'8-cyl' as the same engine and 'exce
     expect(integra?.classSources?.hs?.description).toBe("Integra (all except Type R) (1986-2001)");
   });
 });
+
+describe("getVehicleMapping curated overrides resolve genuine text-level ambiguity", () => {
+  it("resolves the classic-era Thunderbird V8 to its dedicated FS row, not the later combined GS row", () => {
+    // Ford's older Thunderbird family has three Street rows that all textually apply to a
+    // bare "Thunderbird (V8)"/"(V6 ...)" request with no further distinguishing text: FS
+    // "Thunderbird (V8) (1955-88, 2002-05)", GS "Thunderbird (V8 & V6 Super charged)
+    // (1989-97)", and HS "Thunderbird (V6, non-S/C) (1989-97)". No amount of text-matching
+    // can resolve this -- a curated override (verified against the real rulebook) is used
+    // instead of guessing, and the resolved answer still cites the actual Appendix A row.
+    const v8 = getVehicleMapping({ make: "Ford", model: "Thunderbird", year: "older", variant: "Thunderbird (V8)" });
+    expect(v8?.classes).toEqual(["fs"]);
+    expect(v8?.classSources?.fs?.description).toBe("Thunderbird (V8) (1955-88, 2002-05)");
+
+    const v6nonSc = getVehicleMapping({
+      make: "Ford",
+      model: "Thunderbird",
+      year: "older",
+      variant: "Thunderbird (V6 non-Supercharged)"
+    });
+    expect(v6nonSc?.classes).toEqual(["hs"]);
+
+    const v6Sc = getVehicleMapping({
+      make: "Ford",
+      model: "Thunderbird",
+      year: "older",
+      variant: "Thunderbird (V6 Supercharged)"
+    });
+    expect(v6Sc?.classes).toEqual(["gs"]);
+  });
+
+  it("resolves the Mercury Cougar V8 and non-US/6-cylinder Capri via curated overrides", () => {
+    const cougar = getVehicleMapping({ make: "Mercury", model: "Cougar", year: "older", variant: "Cougar (V8)" });
+    expect(cougar?.classes).toEqual(["fs"]);
+
+    const capriNonUs = getVehicleMapping({ make: "Mercury", model: "Capri", year: "older", variant: "Capri (non-US)" });
+    expect(capriNonUs?.classSources?.hs?.description).toBe("Capri (all except V8)");
+
+    const capri6cyl = getVehicleMapping({ make: "Mercury", model: "Capri", year: "older", variant: "Capri (6-cyl)" });
+    expect(capri6cyl?.classSources?.hs?.description).toBe("Capri (all except V8)");
+  });
+
+  it("resolves the non-turbo Porsche 911 to the CS 'Not Otherwise Classified' catch-all", () => {
+    const nonTurbo911 = getVehicleMapping({ make: "Porsche", model: "911", year: "older", variant: "911 (non-Turbo)" });
+    expect(nonTurbo911?.classSources?.cs?.description).toBe("911 (NOC)");
+  });
+
+  it("still refuses to guess for the 944 non-turbo, which has no curated override", () => {
+    // Regression guard: the 944's non-turbo split (8-valve vs. 16-valve, two genuinely
+    // different generations with no distinguishing year data in the "older" bucket) is a
+    // real ambiguity, not a text-matching gap -- deliberately left without an override.
+    const nonTurbo944 = getVehicleMapping({ make: "Porsche", model: "944", year: "older", variant: "944 (non-turbo)" });
+    expect(nonTurbo944).toBeNull();
+  });
+
+  it("still refuses to guess for a genuine multi-listing ambiguity with no curated override at all", () => {
+    // Regression guard for the curated-override branch itself: Honda S2000's CR/non-CR
+    // package ambiguity has no override entry, so hasAnyListingForFamily being true must
+    // still fall through to null exactly as before -- the override is an exception for
+    // specific, human-verified cases, not a general license to guess.
+    const ambiguous = getVehicleMapping({ make: "Honda", model: "S2000", year: "2008" });
+    expect(ambiguous).toBeNull();
+  });
+});
