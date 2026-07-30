@@ -550,6 +550,61 @@ function variantLabel(make: string, family: string, sourceModel: string): string
   return (remainder || displayModel).replace(/^\((.*)\)$/, "$1");
 }
 
+const YEAR_RANGE_TOKEN = /(?:(?:19|20)?\d{2}(?:1\/2)?\s*[-–]\s*(?:19|20)?\d{2}|(?:19|20)\d{2})/;
+
+// A trailing parenthetical made up ONLY of year ranges/single years (optionally several,
+// comma-separated -- e.g. "(1955-88, 2002-05)") is redundant clutter in the submodel dropdown:
+// the user already picked a model year (or "older") earlier in the flow, so repeating it in
+// every trim/package label just adds visual noise without adding information. This only
+// strips a paren whose ENTIRE content is numeric/year-shaped, so a qualifier that happens to
+// also mention a year alongside real text (e.g. "(incl. Competition, 2017-2023)") is left
+// alone here -- dropIrrelevantYearClauses below handles that mixed shape instead.
+function stripTrailingDateRangeParen(label: string): string {
+  const trailingYearParen = new RegExp(
+    `\\s*\\(\\s*${YEAR_RANGE_TOKEN.source}(?:\\s*,\\s*${YEAR_RANGE_TOKEN.source})*\\s*\\)\\s*$`
+  );
+  let stripped = label;
+  let previous: string;
+  do {
+    previous = stripped;
+    stripped = stripped.replace(trailingYearParen, "").trim();
+  } while (stripped !== previous && stripped.length > 0);
+  return stripped || label;
+}
+
+// Within a remaining parenthetical qualifier, drop any comma/semicolon-separated clause that
+// names a SPECIFIC year different from the one the user is currently looking at -- e.g. Honda's
+// HS "Civic (all, excluding Mugen 2008)" is only worth showing to someone looking at a 2008 Civic;
+// for any other year it's noise about a car they don't have. A bare date-range TOKEN glued
+// directly to the front of a clause with no separator (e.g. "2017-21 excl. Limited Edition")
+// is treated as the same redundant date stamp stripTrailingDateRangeParen removes, not a
+// clause of its own, and is always dropped regardless of year.
+function dropIrrelevantYearClauses(label: string, year: string): string {
+  const leadingYearRange = new RegExp(`^\\s*${YEAR_RANGE_TOKEN.source}\\s*`);
+  const pureYearRange = new RegExp(`^${YEAR_RANGE_TOKEN.source}$`);
+  const specificYear = /\b(19|20)\d{2}\b/;
+  return label
+    .replace(/\(([^)]*)\)/g, (whole, content: string) => {
+      const withoutLeadingRange = content.replace(leadingYearRange, "");
+      const separator = withoutLeadingRange.includes(";") ? ";" : ",";
+      const clauses = withoutLeadingRange
+        .split(separator)
+        .map((clause) => clause.trim())
+        .filter(Boolean);
+      const keptClauses = clauses.filter((clause) => {
+        // A clause that IS just a bare date range/year (e.g. "1955-88" split out of "1955-88,
+        // 2002-05") is the same redundant date stamp as the trailing-paren case, not a
+        // year-specific exclusion -- always drop it, regardless of the year being queried.
+        if (pureYearRange.test(clause)) return false;
+        const match = clause.match(specificYear);
+        return !match || match[0] === year;
+      });
+      return keptClauses.length > 0 ? `(${keptClauses.join(`${separator} `)})` : "";
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function addVariant(
   variants: Map<string, VehicleVariant>,
   value: string,
@@ -1628,7 +1683,38 @@ export function getVehicleVariants(
     const onlyVariant = [...variants.values()][0];
     if (normalized(onlyVariant.value) === normalized(family)) return [];
   }
-  return [...variants.values()].sort((left, right) => {
+
+  // Cosmetic label cleanup: the year (or "older") was already chosen earlier in the flow, so
+  // repeating a redundant date-range stamp or an irrelevant year-specific exclusion clause in
+  // every trim/package label is just visual noise. Applied only here, after every variant for
+  // this family/year is known, so a genuine collision (e.g. Audi's own "RS 3 (2017-19)" and
+  // "RS 3 (2022-26)" are two real, differently-classed generations that share the same bare
+  // name) can fall back to keeping its distinguishing date info instead of silently looking
+  // identical in the dropdown. The underlying selectable value is never touched either way.
+  const cleanedLabels = new Map(
+    [...variants.values()].map((variant) => [
+      variant.value,
+      dropIrrelevantYearClauses(stripTrailingDateRangeParen(variant.label), year)
+    ])
+  );
+  const cleanedLabelCounts = new Map<string, number>();
+  for (const label of cleanedLabels.values()) {
+    const key = normalized(label);
+    cleanedLabelCounts.set(key, (cleanedLabelCounts.get(key) ?? 0) + 1);
+  }
+  const finalVariants = [...variants.values()].map((variant) => {
+    const cleaned = cleanedLabels.get(variant.value)!;
+    const collides = (cleanedLabelCounts.get(normalized(cleaned)) ?? 0) > 1;
+    // On a genuine collision, fall back to the completely untouched original label rather
+    // than a partially-cleaned one -- dropIrrelevantYearClauses alone would still remove the
+    // very date info that's needed here to tell the two real, differently-dated listings
+    // apart (a bare date-range fragment like "1955-88" is indistinguishable from a year-
+    // specific exclusion once split into its own clause, so partial cleanup can't reliably
+    // preserve just the disambiguating part).
+    return { value: variant.value, label: collides ? variant.label : cleaned };
+  });
+
+  return finalVariants.sort((left, right) => {
     const leftBase = /^(?:base|non-|standard)/i.test(left.label) ? 0 : 1;
     const rightBase = /^(?:base|non-|standard)/i.test(right.label) ? 0 : 1;
     if (leftBase !== rightBase) return leftBase - rightBase;

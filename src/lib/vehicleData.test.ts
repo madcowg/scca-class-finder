@@ -641,3 +641,45 @@ describe("getVehicleMapping curated overrides resolve genuine text-level ambigui
     expect(ambiguous).toBeNull();
   });
 });
+
+describe("getVehicleVariants submodel labels drop redundant year clutter", () => {
+  it("strips a pure trailing date-range stamp, since the year was already chosen earlier in the flow", () => {
+    const variants = getVehicleVariants("Audi", "RS 3", "2018");
+    const rs3 = variants.find((v) => v.value === "RS 3 (2017-19)");
+    expect(rs3?.label).toBe("RS 3");
+  });
+
+  it("strips a bare date-range token glued to the front of a mixed qualifier, keeping the real exclusion", () => {
+    const variants = getVehicleVariants("Honda", "Civic", "2019");
+    const typeR = variants.find((v) => v.value === "Civic Type R (2017-21 excl. Limited Edition)");
+    expect(typeR?.label).toBe("Civic Type R (excl. Limited Edition)");
+  });
+
+  it("keeps a year-specific exclusion clause when it matches the year being viewed", () => {
+    const variants = getVehicleVariants("Honda", "Civic", "2008");
+    const civic = variants.find((v) => v.value === "Civic (all, excluding Mugen 2008) (1975-2015)");
+    expect(civic?.label).toBe("Civic (all, excluding Mugen 2008)");
+  });
+
+  it("drops a year-specific exclusion clause when it does not match the year being viewed", () => {
+    // Same underlying listing as the 2008 case above -- the "excluding Mugen 2008" clause is
+    // only relevant to someone looking at a 2008 Civic, not a 2013 one.
+    const variants = getVehicleVariants("Honda", "Civic", "2013");
+    const civic = variants.find((v) => v.value === "Civic (all, excluding Mugen 2008) (1975-2015)");
+    expect(civic?.label).toBe("Civic (all)");
+  });
+
+  it("falls back to the full untouched label when stripping would make two real, differently-dated listings look identical", () => {
+    // Ford's older Thunderbird has both a curated-override entry ("Thunderbird (V8)", no year
+    // in its own text) and the actual Appendix A FS row ("Thunderbird (V8) (1955-88, 2002-05)")
+    // as two distinct selectable variants. Both would clean to the same bare "Thunderbird (V8)"
+    // label -- a real collision, not clutter -- so the official listing must keep showing its
+    // date range to stay distinguishable from the shorter curated one.
+    const variants = getVehicleVariants("Ford", "Thunderbird", "older");
+    const curated = variants.find((v) => v.value === "Thunderbird (V8)");
+    const official = variants.find((v) => v.value === "Thunderbird (V8) (1955-88, 2002-05)");
+    expect(curated?.label).toBe("Thunderbird (V8)");
+    expect(official?.label).toBe("Thunderbird (V8) (1955-88, 2002-05)");
+    expect(curated?.label).not.toBe(official?.label);
+  });
+});
