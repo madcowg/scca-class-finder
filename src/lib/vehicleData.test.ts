@@ -477,3 +477,43 @@ describe("getVehicleMapping spelled-out 'Not Otherwise Classified' vs. Appendix 
     expect(renault?.classSources?.fsp?.description).toBe("R-5 (NOC) & LeCar");
   });
 });
+
+describe("getVehicleMapping does not let a compound 'Turbo' name absorb an unrelated non-turbo sibling", () => {
+  it("resolves the non-turbo Porsche 924 to its own row, not the Turbo-only row", () => {
+    // Appendix A's ES "924 Turbo (Audi engine) (1979-81)" and HS "924 (Audi engine, non-turbo)"
+    // both reduce to bare "924" once their own qualifiers are stripped -- "Turbo" here is a
+    // discriminating adjective naming a DIFFERENT, mutually exclusive car, not a second listed
+    // trim the way "335i & 335is" is. A non-turbo request must resolve only to the HS row.
+    const nonTurbo924 = getVehicleMapping({ make: "Porsche", model: "924", year: "older", variant: "924 (Audi engine)" });
+    expect(nonTurbo924?.classSources?.hs?.description).toBe("924 (Audi engine, non-turbo)");
+    expect(nonTurbo924?.classSources?.es).toBeUndefined();
+  });
+
+  it("resolves the Turbo Porsche 924 to its own row, not the non-turbo row", () => {
+    const turbo924 = getVehicleMapping({ make: "Porsche", model: "924", year: "older", variant: "924 Turbo" });
+    expect(turbo924?.classSources?.es?.description).toBe("924 Turbo (Audi engine) (1979-81)");
+    expect(turbo924?.classSources?.hs).toBeUndefined();
+  });
+
+  it("resolves the non-turbo Eagle Talon to its own row, not the unrelated Turbo AWD row", () => {
+    const talon = getVehicleMapping({ make: "Eagle", model: "Talon", year: "older", variant: "Talon (non-turbo)" });
+    expect(talon?.classSources?.hs?.description).toBe("Talon (FWD)");
+    expect(talon?.classSources?.ds).toBeUndefined();
+  });
+
+  it("resolves the Turbo Nissan 300ZX to its own row, not the unrelated non-turbo row", () => {
+    const turbo300zx = getVehicleMapping({ make: "Nissan", model: "300ZX", year: "older", variant: "300ZX Turbo" });
+    expect(turbo300zx?.classSources?.fs?.description).toBe("300ZX Turbo (1984-89)");
+    expect(turbo300zx?.classSources?.hs).toBeUndefined();
+  });
+
+  it("still resolves the M340i to its 3 Series row naming it only inside a bare-family-name qualifier", () => {
+    // Regression guard: an earlier version of the "924 Turbo" fix required a listing's
+    // pre-qualifier tokens to all be echoed back by the request, but never excluded the bare
+    // family name's OWN tokens first -- so a request like "M340i" (which never repeats "3
+    // Series") failed against the G20/21 row's pre-qualifier "3 series", even though "3
+    // series" is just the family name here, not a discriminating adjective like "Turbo".
+    const m340i = getVehicleMapping({ make: "BMW", model: "3 Series", year: "2024", variant: "M340i Sedan" });
+    expect(m340i?.classSources?.fs?.description).toContain("G20/21");
+  });
+});

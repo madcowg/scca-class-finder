@@ -918,15 +918,84 @@ export function rulebookListingsForFamily(
 // of tie, but too strict to use as the ONLY matching rule everywhere -- Volvo's FSP "1800,
 // P1800, & ES1800 (all)" row, for instance, never repeats a selected car's own "1780 cc"
 // engine-size qualifier, yet is still the single correct (non-ambiguous) match for it.
-function variantTokensFullyCoveredByListing(listing: AppendixListing, requestedVariant: string): boolean {
+function variantTokensFullyCoveredByListing(
+  listing: AppendixListing,
+  requestedVariant: string,
+  family: string
+): boolean {
   const listingTokens = new Set(rulebookVariantIdentity(listing.description).split(" ").filter(Boolean));
   const requestedSignificantTokens = rulebookVariantIdentity(requestedVariant)
     .split(" ")
     .filter((token) => token.length > 0 && !BODY_STYLE_TOKENS.has(token));
-  return (
-    requestedSignificantTokens.length > 0 &&
-    requestedSignificantTokens.every((token) => listingTokens.has(token))
-  );
+  if (
+    requestedSignificantTokens.length === 0 ||
+    !requestedSignificantTokens.every((token) => listingTokens.has(token))
+  ) {
+    return false;
+  }
+  if (listingPreQualifierNamesMultipleTrims(listing)) return true;
+  // A single-compound-name listing's pre-qualifier tokens BEYOND the bare family name (e.g.
+  // "Turbo" in "924 Turbo") are not an optional extra the way a qualifier's own internal
+  // multi-trim list is -- they're part of what car this listing actually names. The subset
+  // check above only requires the REQUEST's tokens to all appear in the listing; without this,
+  // a bare "924" request would still loosely "cover" the Turbo-only "924 Turbo" row just by
+  // having fewer tokens than it. Require the reverse too, but only for tokens beyond the
+  // family name itself -- a bare trim code like "M340i" never echoes back its own family name
+  // ("3 Series"), so the family's own tokens must not be part of this requirement, only a
+  // genuinely extra discriminating word the listing adds on top of it.
+  const requestedTokenSet = new Set(requestedSignificantTokens);
+  const familyTokens = new Set(identityText(family).split(" ").filter(Boolean));
+  const preQualifierExtraTokens = rulebookIdentity(listing.description)
+    .split(" ")
+    .filter((token) => token.length > 0 && !familyTokens.has(token));
+  return preQualifierExtraTokens.every((token) => requestedTokenSet.has(token));
+}
+
+// Whether a listing's pre-qualifier text is a genuine LIST of multiple positively-named trims
+// ("335i & 335is", "Camaro & Firebird") rather than one compound name made of a base plus a
+// qualifying adjective ("924 Turbo", "300ZX Turbo", "Talon Turbo"). Appendix A never separates
+// the latter shape with a comma or ampersand -- the adjective sits directly next to the base
+// name -- so that punctuation is a reliable signal of which shape a listing actually has.
+function listingPreQualifierNamesMultipleTrims(listing: AppendixListing): boolean {
+  const beforeQualifier = listing.description.replace(/\*?\s*Limited Prep\b/gi, "").split("(")[0];
+  return /[&,]/.test(beforeQualifier);
+}
+
+// Tokens a description explicitly excludes via "non-X" or "excl(uding) X" wording. Plain
+// tokenization can't tell "turbo" the excluded trim apart from "turbo" the included one --
+// both are just the word "turbo" once split into tokens -- so this is extracted separately.
+function excludedTokensIn(description: string): Set<string> {
+  const tokens = new Set<string>();
+  const addTokens = (clause: string) => {
+    for (const token of identityText(clause).split(" ")) {
+      if (token) tokens.add(token);
+    }
+  };
+  for (const match of description.matchAll(/\bnon-([a-z0-9]+)/gi)) {
+    addTokens(match[1]);
+  }
+  for (const match of description.matchAll(/\bexcl(?:uding)?\.?\s+([^,;)]*)/gi)) {
+    addTokens(match[1]);
+  }
+  return tokens;
+}
+
+// Whether requestedVariant positively names something the listing's own wording explicitly
+// excludes (e.g. the listing says "non-turbo" but the request is a Turbo car). Plain token
+// containment/subset checks can't see this on their own: "non-turbo" tokenizes to "non" and
+// "turbo" same as any other pairing, so a Turbo car's request otherwise loosely "covers" a
+// non-turbo-only listing just by sharing the bare word "turbo". A token the REQUEST'S OWN
+// wording also excludes doesn't count (e.g. a request that itself says "non-turbo" naming the
+// same excluded engine as the listing is compatible, not contradictory).
+function requestContradictsListingExclusion(listing: AppendixListing, requestedVariant: string): boolean {
+  const listingExcluded = excludedTokensIn(listing.description);
+  if (listingExcluded.size === 0) return false;
+  const requestExcluded = excludedTokensIn(requestedVariant);
+  const requestTokens = new Set(rulebookVariantIdentity(requestedVariant).split(" ").filter(Boolean));
+  for (const token of listingExcluded) {
+    if (requestTokens.has(token) && !requestExcluded.has(token)) return true;
+  }
+  return false;
 }
 
 function rulebookVariantMatches(
@@ -935,6 +1004,7 @@ function rulebookVariantMatches(
   family: string
 ): boolean {
   if (normalized(listing.description) === normalized(requestedVariant)) return true;
+  if (requestContradictsListingExclusion(listing, requestedVariant)) return false;
   const requestedVariantIdentity = rulebookVariantIdentity(requestedVariant);
   const listingVariantIdentity = rulebookVariantIdentity(listing.description);
   if (requestedVariantIdentity === listingVariantIdentity) return true;
@@ -944,15 +1014,21 @@ function rulebookVariantMatches(
 
   // A listing can positively name more than one trim before its qualifier, e.g. "335i &
   // 335is (E9X chassis; 6-cyl Turbo)" -- a bare requested variant of just one of those names
-  // ("335i") should still match it as a whole word within that compound identity.
-  if (containsIdentity(listingIdentity, requestedIdentity)) return true;
+  // ("335i") should still match it as a whole word within that compound identity. But this
+  // must not fire for a listing whose pre-qualifier text is a SINGLE compound name like "924
+  // Turbo" or "300ZX Turbo" -- there, "Turbo" is a discriminating adjective naming a
+  // DIFFERENT, mutually exclusive car from the plain "924"/"300ZX", not a second listed trim,
+  // and a request for the bare (non-turbo) car must not loosely absorb the Turbo-only row.
+  if (listingPreQualifierNamesMultipleTrims(listing) && containsIdentity(listingIdentity, requestedIdentity)) {
+    return true;
+  }
 
   // A listing can also name multiple trims INSIDE its qualifier rather than before it, e.g.
   // "3 series (G20/21 Chassis 330i incl. xDrive, 330e incl xDrive, M340i)" -- the requested
   // variant's meaningful tokens (ignoring body-style words like "Sedan"/"Coupe"/"Wagon" that
   // the EPA catalog appends but Appendix A rarely repeats) just need to all appear somewhere
   // in the listing's full qualifier-inclusive identity.
-  if (variantTokensFullyCoveredByListing(listing, requestedVariant)) return true;
+  if (variantTokensFullyCoveredByListing(listing, requestedVariant, family)) return true;
 
   // Fallback: also ignore AWD-system marketing suffixes, but only once the stricter check
   // above (which still requires them) has already failed to match anything -- this keeps a
@@ -1135,7 +1211,7 @@ function resolveListingForSelectionInCategory(
   // qualifier, yet is still the one correct match for it).
   const tieBrokenMatches =
     selection.variant && uniqueSorted(matches.map((listing) => listing.classId)).length > 1
-      ? matches.filter((listing) => variantTokensFullyCoveredByListing(listing, selection.variant!))
+      ? matches.filter((listing) => variantTokensFullyCoveredByListing(listing, selection.variant!, selection.model))
       : matches;
   const resolvedMatches = tieBrokenMatches.length > 0 ? tieBrokenMatches : matches;
 
