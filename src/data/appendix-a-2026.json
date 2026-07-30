@@ -16505,12 +16505,7 @@
       "category": "streetPrepared",
       "manufacturer": "Datsun",
       "description": "Roadster (1500, 1600, & 2000)",
-      "yearRanges": [
-        [
-          2000,
-          2000
-        ]
-      ],
+      "yearRanges": [],
       "page": 220,
       "ruleSection": "Appendix A - CSP",
       "sourceUrl": "https://www.scca.com/downloads/78494/download#page=220"
@@ -16529,7 +16524,7 @@
       "classId": "csp",
       "category": "streetPrepared",
       "manufacturer": "Fiat",
-      "description": "124 Spider (1975-78) & 2000 Spi der (non-turbo)",
+      "description": "124 Spider (1975-78) & 2000 Spider (non-turbo)",
       "yearRanges": [
         [
           1975,
@@ -21535,12 +21530,7 @@
       "category": "streetPrepared",
       "manufacturer": "Chrysler, Plymouth, & Dodge",
       "description": "Sapporo (1600, 2000, & 2600)",
-      "yearRanges": [
-        [
-          2000,
-          2000
-        ]
-      ],
+      "yearRanges": [],
       "page": 227,
       "ruleSection": "Appendix A - FSP",
       "sourceUrl": "https://www.scca.com/downloads/78494/download#page=227"
@@ -21884,12 +21874,7 @@
       "category": "streetPrepared",
       "manufacturer": "Ford & Mercury",
       "description": "Pinto Wagon (2000, 2300, & 2600)",
-      "yearRanges": [
-        [
-          2000,
-          2000
-        ]
-      ],
+      "yearRanges": [],
       "page": 228,
       "ruleSection": "Appendix A - FSP",
       "sourceUrl": "https://www.scca.com/downloads/78494/download#page=228"

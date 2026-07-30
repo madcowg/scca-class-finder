@@ -232,3 +232,45 @@ describe("getVehicleMapping generic-family-catch-all-by-elimination matching", (
     expect(car330e?.classSources?.fs?.description).toContain("G20/21");
   });
 });
+
+describe("getVehicleMapping engine-displacement numbers mistaken for a model year", () => {
+  it("does not restrict the Datsun 2000 Roadster to model year 2000, which the row never named", () => {
+    // Appendix A CSP "Roadster (1500, 1600, & 2000)" lists three engine
+    // displacements (1500cc, 1600cc, 2000cc), not a model year -- the extraction
+    // pipeline's bare-4-digit-number year detection previously misread "2000"
+    // as a year range, which made this row unreachable for the real "older"
+    // Datsun 2000 catalog entry (Datsun never sold a model-year-2000 Roadster).
+    const datsun2000 = getVehicleMapping({ make: "Datsun", model: "2000", year: "older" });
+    expect(datsun2000?.classSources?.csp?.description).toBe("Roadster (1500, 1600, & 2000)");
+  });
+
+  it("does not restrict the Plymouth Sapporo to model year 2000, which the row never named", () => {
+    // Appendix A FSP "Sapporo (1600, 2000, & 2600)" lists three engine
+    // displacements, not a model year; same transcription bug as the Datsun row.
+    const sapporo = getVehicleMapping({ make: "Plymouth", model: "Sapporo", year: "older" });
+    expect(sapporo?.classSources?.fsp?.description).toBe("Sapporo (1600, 2000, & 2600)");
+  });
+
+  it("does not restrict the Ford Pinto Wagon to model year 2000, which the row never named", () => {
+    // Appendix A FSP "Pinto Wagon (2000, 2300, & 2600)" lists three engine
+    // displacements, not a model year; same transcription bug as the Datsun row.
+    const pinto = getVehicleMapping({ make: "Ford", model: "Pinto", year: "older" });
+    expect(pinto?.classSources?.fsp?.description).toContain("Pinto Wagon (2000, 2300, & 2600)");
+  });
+});
+
+describe("getVehicleMapping Fiat 2000 Spider transcription typo", () => {
+  it("matches the naturally-aspirated 2000 Spider to its own non-turbo row instead of the unrelated Turbo-only row", () => {
+    // Appendix A CSP listed this row's second clause as "2000 Spi der (non-turbo)"
+    // -- a PDF-extraction typo that split "Spider" in two. The broken token
+    // failed to match the naturally-aspirated "2000 Spider" catalog entry, so it
+    // fell through to Fiat's other CSP row, "2000 Spider Turbo", misclassifying a
+    // non-turbo car into a turbo-only class. Fixing the typo must resolve the
+    // non-turbo row and must NOT resolve the Turbo-only row.
+    const fiat2000Spider = getVehicleMapping({ make: "Fiat", model: "2000 Spider", year: "older" });
+    expect(fiat2000Spider?.classSources?.csp?.description).toBe(
+      "124 Spider (1975-78) & 2000 Spider (non-turbo)"
+    );
+    expect(fiat2000Spider?.classSources?.csp?.description).not.toBe("2000 Spider Turbo");
+  });
+});

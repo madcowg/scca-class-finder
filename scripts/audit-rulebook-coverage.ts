@@ -128,6 +128,6 @@ if (streetTouring.reachedExactListings / streetTouring.exactListings < 0.84) {
   throw new Error("Exact official Street Touring selector reachability fell below 84%");
 }
 
-if (streetPrepared.reachedExactListings / streetPrepared.exactListings < 0.77) {
-  throw new Error("Exact official Street Prepared selector reachability fell below 77%");
+if (streetPrepared.reachedExactListings / streetPrepared.exactListings < 0.79) {
+  throw new Error("Exact official Street Prepared selector reachability fell below 79%");
 }
