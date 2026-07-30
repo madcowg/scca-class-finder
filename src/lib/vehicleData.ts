@@ -899,6 +899,29 @@ export function rulebookListingsForFamily(
   );
 }
 
+// Whether every meaningful token of requestedVariant (ignoring EPA-catalog body-style noise
+// like "Sedan"/"Coupe"/"Wagon") appears somewhere in the listing's own qualifier-inclusive
+// identity. Exported to callers as a stricter TIE-BREAKER: rulebookVariantMatches itself is
+// intentionally loose (a bare-name match or plain containment is enough), which is correct
+// when only one listing in a family could possibly apply, but can let two listings that
+// commit to mutually exclusive engines/trims BOTH loosely match a request that only actually
+// describes one of them (e.g. Ford's "Mustang (V8, NOC)" and "Mustang (4-cyl, 6-cyl, & 4-cyl
+// Turbo except SVO)" both reduce to bare "Mustang", so a request for "Mustang (4-cyl)" must
+// not also match the V8-only row). This full-token check is precise enough to break that kind
+// of tie, but too strict to use as the ONLY matching rule everywhere -- Volvo's FSP "1800,
+// P1800, & ES1800 (all)" row, for instance, never repeats a selected car's own "1780 cc"
+// engine-size qualifier, yet is still the single correct (non-ambiguous) match for it.
+function variantTokensFullyCoveredByListing(listing: AppendixListing, requestedVariant: string): boolean {
+  const listingTokens = new Set(rulebookVariantIdentity(listing.description).split(" ").filter(Boolean));
+  const requestedSignificantTokens = rulebookVariantIdentity(requestedVariant)
+    .split(" ")
+    .filter((token) => token.length > 0 && !BODY_STYLE_TOKENS.has(token));
+  return (
+    requestedSignificantTokens.length > 0 &&
+    requestedSignificantTokens.every((token) => listingTokens.has(token))
+  );
+}
+
 function rulebookVariantMatches(
   listing: AppendixListing,
   requestedVariant: string,
@@ -922,20 +945,15 @@ function rulebookVariantMatches(
   // variant's meaningful tokens (ignoring body-style words like "Sedan"/"Coupe"/"Wagon" that
   // the EPA catalog appends but Appendix A rarely repeats) just need to all appear somewhere
   // in the listing's full qualifier-inclusive identity.
-  const listingTokens = new Set(listingVariantIdentity.split(" ").filter(Boolean));
-  const requestedSignificantTokens = requestedVariantIdentity
-    .split(" ")
-    .filter((token) => token.length > 0 && !BODY_STYLE_TOKENS.has(token));
-  if (
-    requestedSignificantTokens.length > 0 &&
-    requestedSignificantTokens.every((token) => listingTokens.has(token))
-  ) {
-    return true;
-  }
+  if (variantTokensFullyCoveredByListing(listing, requestedVariant)) return true;
 
   // Fallback: also ignore AWD-system marketing suffixes, but only once the stricter check
   // above (which still requires them) has already failed to match anything -- this keeps a
   // dedicated AWD-specific listing (if one exists) preferred over a generic base-trim one.
+  const listingTokens = new Set(listingVariantIdentity.split(" ").filter(Boolean));
+  const requestedSignificantTokens = requestedVariantIdentity
+    .split(" ")
+    .filter((token) => token.length > 0 && !BODY_STYLE_TOKENS.has(token));
   const requestedTokensIgnoringDrivetrain = requestedSignificantTokens.filter(
     (token) => !DRIVETRAIN_SUFFIX_TOKENS.has(token)
   );
@@ -1097,9 +1115,26 @@ function resolveListingForSelectionInCategory(
     }
   }
 
-  const classes = uniqueSorted(matches.map((listing) => listing.classId));
+  // rulebookVariantMatches is deliberately loose (a shared bare name before either side's own
+  // parenthetical is enough), which is correct when only one listing in the family could
+  // possibly apply -- but two listings that commit to mutually exclusive engines/trims can
+  // BOTH loosely match a request that only actually describes one of them (Ford's "Mustang
+  // (V8, NOC)" and "Mustang (4-cyl, 6-cyl, & 4-cyl Turbo except SVO)" both reduce to bare
+  // "Mustang"). Only when the loose match produced a genuine multi-class tie is it worth
+  // re-checking with the stricter, qualifier-aware token test -- if that narrows it to a
+  // single class, prefer it; if not (or if there was no tie to begin with), keep the original
+  // loose result rather than risk narrowing a real single-listing match too far (e.g. Volvo's
+  // FSP "1800, P1800, & ES1800 (all)" row never repeats a selected car's own "1780 cc" engine
+  // qualifier, yet is still the one correct match for it).
+  const tieBrokenMatches =
+    selection.variant && uniqueSorted(matches.map((listing) => listing.classId)).length > 1
+      ? matches.filter((listing) => variantTokensFullyCoveredByListing(listing, selection.variant!))
+      : matches;
+  const resolvedMatches = tieBrokenMatches.length > 0 ? tieBrokenMatches : matches;
+
+  const classes = uniqueSorted(resolvedMatches.map((listing) => listing.classId));
   return {
-    listing: classes.length === 1 ? matches[0] ?? null : null,
+    listing: classes.length === 1 ? resolvedMatches[0] ?? null : null,
     // Distinct from "listings.length === 0" above: Appendix A can define a Street row for
     // this family that positively names a DIFFERENT sibling trim entirely (e.g. Volvo's GS
     // "S60R (except Polestar)" row exists for the S60 family, but a plain non-R "S60 & V70"

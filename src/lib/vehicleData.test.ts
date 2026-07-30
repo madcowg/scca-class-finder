@@ -386,3 +386,59 @@ describe("getVehicleVariants suppresses generic trim names that can only ever re
     expect(resolvable.length).toBe(variants.length - 1);
   });
 });
+
+describe("resolveListingForSelectionInCategory tie-breaks a false loose-match ambiguity without over-narrowing real single-listing matches", () => {
+  it("resolves the vintage Mustang 4-cyl/6-cyl trims to their combined HS row, not the unrelated V8-only row", () => {
+    // Ford's older "Mustang" family has two Street rows that both reduce to bare "Mustang"
+    // before their own parenthetical -- HS "Mustang (4-cyl, 6-cyl, & 4-cyl Turbo except SVO)"
+    // and FS "Mustang (V8, NOC)". rulebookVariantMatches's loose bare-name/containment checks
+    // treat both as plausible for ANY bare "Mustang (...)" request, which used to make a
+    // request for the 4-cylinder car ambiguous between two rows with different classes and
+    // resolve to null. The tie-breaker must recognize this as the "V8, NOC" row not actually
+    // describing a 4-cylinder car and resolve to the HS row alone.
+    for (const variant of ["Mustang (4-cyl)", "Mustang (4-cyl Turbo except SVO)", "Mustang (6-cyl)"]) {
+      const car = getVehicleMapping({ make: "Ford", model: "Mustang", year: "older", variant });
+      expect(car?.classSources?.hs?.description).toBe(
+        "Mustang (4-cyl, 6-cyl, & 4-cyl Turbo except SVO) (19641/2-93)"
+      );
+    }
+
+    const v8 = getVehicleMapping({ make: "Ford", model: "Mustang", year: "older", variant: "Mustang (V8, NOC)" });
+    expect(v8?.classSources?.fs?.description).toBe("Mustang (V8, NOC)");
+    expect(v8?.classSources?.hs).toBeUndefined();
+  });
+
+  it("does not over-narrow a real single-listing match just because the selected variant carries its own extra qualifier", () => {
+    // Regression guard: an earlier version of this fix required the SELECTED variant to have
+    // no qualifier of its own before trusting a loose match at all, which broke every one of
+    // these -- each is the ONLY Street Prepared listing for its family, so there is no
+    // competing row to be ambiguous with, and the selected car's own engine-size/edition detail
+    // (which the single listing's broader qualifier never repeats) must not block the match.
+    const volvo = getVehicleMapping({ make: "Volvo", model: "P-1800", year: "older", variant: "P-1800 (1780 cc)" });
+    expect(volvo?.classSources?.fsp?.description).toBe("1800, P1800, & ES1800 (all)");
+
+    const renault = getVehicleMapping({
+      make: "Renault",
+      model: "R-5",
+      year: "older",
+      variant: "R-5 (Not Otherwise Classified) & LeCar"
+    });
+    expect(renault?.classSources?.fsp?.description).toBe("R-5 (NOC) & LeCar");
+
+    const subaru = getVehicleMapping({
+      make: "Subaru",
+      model: "Turbo 4WD",
+      year: "older",
+      variant: "Turbo 4WD (all, Not Otherwise Classified)"
+    });
+    expect(subaru?.classSources?.fsp?.description).toBe("Turbo 4WD (all, NOC)");
+
+    const mini = getVehicleMapping({
+      make: "MINI",
+      model: "Cooper S",
+      year: "older",
+      variant: "Cooper S (including JCW & JCWGP except Countryman)"
+    });
+    expect(mini?.classSources?.esp?.description).toContain("Cooper S");
+  });
+});
