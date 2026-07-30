@@ -1163,9 +1163,9 @@ function isGenericFamilyCatchAll(listing: AppendixListing, family: string): bool
     if (/^(?:19|20)?\d{2}(?:1\/2)?\s*-\s*(?:19|20)?\d{2}$/.test(clause)) return true;
     if (/^(?:19|20)\d{2}$/.test(clause)) return true;
     if (/^all$/i.test(clause)) return true;
-    if (/^all\s+excl(?:uding)?\.?\s+/i.test(clause)) return true;
+    if (/^all\s+(?:excl(?:uding)?\.?|except)\s+/i.test(clause)) return true;
     if (/^non-[a-z0-9]+(?:\s+[a-z0-9]+)*$/i.test(clause)) return true;
-    if (/^excl(?:uding)?\.?\s+/i.test(clause)) return true;
+    if (/^(?:excl(?:uding)?\.?|except)\s+/i.test(clause)) return true;
     if (/^[a-z]+\d[a-z0-9]*(?:\s*\/\s*[a-z]+\d[a-z0-9]*)*\s+chassis$/i.test(clause)) return true;
     if (/^chassis$/i.test(clause)) return true;
     if (/^\*?\s*limited prep$/i.test(clause)) return true;

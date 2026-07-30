@@ -563,4 +563,18 @@ describe("getVehicleMapping recognizes 'V8'/'8-cyl' as the same engine and 'exce
     const s60r = getVehicleMapping({ make: "Volvo", model: "S60", year: "2004", variant: s60rVariant });
     expect(s60r?.classSources?.gs?.description).toBe("S60R (except Polestar)");
   });
+
+  it("resolves the Acura Integra 'all except Type R' catch-all via elimination", () => {
+    // Appendix A's HS row "Integra (all except Type R)" is a generic family catch-all --
+    // isGenericFamilyCatchAll's clause classifier only recognized "all excl. X" as
+    // non-committal, not "all except X", so this row was never eliminated into as the sole
+    // remaining catch-all for a plain non-Type-R Integra request.
+    const integra = getVehicleMapping({
+      make: "Acura",
+      model: "Integra",
+      year: "older",
+      variant: "Integra (all except Type R)"
+    });
+    expect(integra?.classSources?.hs?.description).toBe("Integra (all except Type R) (1986-2001)");
+  });
 });
