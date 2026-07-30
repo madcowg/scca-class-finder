@@ -918,15 +918,43 @@ export function rulebookListingsForFamily(
 // of tie, but too strict to use as the ONLY matching rule everywhere -- Volvo's FSP "1800,
 // P1800, & ES1800 (all)" row, for instance, never repeats a selected car's own "1780 cc"
 // engine-size qualifier, yet is still the single correct (non-ambiguous) match for it.
+// "V8" and "8-cyl" (or "8 cylinder") are the same engine description in two different
+// Appendix A/catalog conventions -- canonicalize both to one token so a request phrased one
+// way still matches a listing phrased the other. Scoped to this local helper (not the shared
+// identityText) since an unrelated fallback elsewhere specifically expects the bare "v6"/"v8"
+// spelling and must not be affected by this.
+function canonicalEngineTokens(tokens: string[]): string[] {
+  const canonical: string[] = [];
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    const vMatch = /^v(\d)$/.exec(token);
+    if (vMatch) {
+      canonical.push(`${vMatch[1]}cyl`);
+      continue;
+    }
+    if (/^\d$/.test(token) && tokens[index + 1] === "cyl") {
+      canonical.push(`${token}cyl`);
+      index += 1;
+      continue;
+    }
+    canonical.push(token);
+  }
+  return canonical;
+}
+
 function variantTokensFullyCoveredByListing(
   listing: AppendixListing,
   requestedVariant: string,
   family: string
 ): boolean {
-  const listingTokens = new Set(rulebookVariantIdentity(listing.description).split(" ").filter(Boolean));
-  const requestedSignificantTokens = rulebookVariantIdentity(requestedVariant)
-    .split(" ")
-    .filter((token) => token.length > 0 && !BODY_STYLE_TOKENS.has(token));
+  const listingTokens = new Set(
+    canonicalEngineTokens(rulebookVariantIdentity(listing.description).split(" ").filter(Boolean))
+  );
+  const requestedSignificantTokens = canonicalEngineTokens(
+    rulebookVariantIdentity(requestedVariant)
+      .split(" ")
+      .filter((token) => token.length > 0 && !BODY_STYLE_TOKENS.has(token))
+  );
   if (
     requestedSignificantTokens.length === 0 ||
     !requestedSignificantTokens.every((token) => listingTokens.has(token))
@@ -945,9 +973,11 @@ function variantTokensFullyCoveredByListing(
   // genuinely extra discriminating word the listing adds on top of it.
   const requestedTokenSet = new Set(requestedSignificantTokens);
   const familyTokens = new Set(identityText(family).split(" ").filter(Boolean));
-  const preQualifierExtraTokens = rulebookIdentity(listing.description)
-    .split(" ")
-    .filter((token) => token.length > 0 && !familyTokens.has(token));
+  const preQualifierExtraTokens = canonicalEngineTokens(
+    rulebookIdentity(listing.description)
+      .split(" ")
+      .filter((token) => token.length > 0 && !familyTokens.has(token))
+  );
   return preQualifierExtraTokens.every((token) => requestedTokenSet.has(token));
 }
 
@@ -967,14 +997,17 @@ function listingPreQualifierNamesMultipleTrims(listing: AppendixListing): boolea
 function excludedTokensIn(description: string): Set<string> {
   const tokens = new Set<string>();
   const addTokens = (clause: string) => {
-    for (const token of identityText(clause).split(" ")) {
-      if (token) tokens.add(token);
+    for (const token of canonicalEngineTokens(identityText(clause).split(" ").filter(Boolean))) {
+      tokens.add(token);
     }
   };
   for (const match of description.matchAll(/\bnon-([a-z0-9]+)/gi)) {
     addTokens(match[1]);
   }
   for (const match of description.matchAll(/\bexcl(?:uding)?\.?\s+([^,;)]*)/gi)) {
+    addTokens(match[1]);
+  }
+  for (const match of description.matchAll(/\bexcept\s+([^,;)]*)/gi)) {
     addTokens(match[1]);
   }
   return tokens;
@@ -991,7 +1024,9 @@ function requestContradictsListingExclusion(listing: AppendixListing, requestedV
   const listingExcluded = excludedTokensIn(listing.description);
   if (listingExcluded.size === 0) return false;
   const requestExcluded = excludedTokensIn(requestedVariant);
-  const requestTokens = new Set(rulebookVariantIdentity(requestedVariant).split(" ").filter(Boolean));
+  const requestTokens = new Set(
+    canonicalEngineTokens(rulebookVariantIdentity(requestedVariant).split(" ").filter(Boolean))
+  );
   for (const token of listingExcluded) {
     if (requestTokens.has(token) && !requestExcluded.has(token)) return true;
   }

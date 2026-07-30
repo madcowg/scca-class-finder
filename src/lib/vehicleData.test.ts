@@ -543,3 +543,24 @@ describe("getVehicleMapping Corvette C4 transcription typo and bare-name dead en
     expect(variants.length).toBeGreaterThan(0);
   });
 });
+
+describe("getVehicleMapping recognizes 'V8'/'8-cyl' as the same engine and 'except' as an exclusion", () => {
+  it("resolves the 8-cylinder Mercury Capri to its V8-only row", () => {
+    // Appendix A's FS row is phrased "Capri (V8)"; the catalog's own selectable variant is
+    // phrased "Capri (8-cyl)" -- the same engine, described two different ways. Without
+    // recognizing "V8" and "8-cyl" as the same token, the two never matched.
+    const capri = getVehicleMapping({ make: "Mercury", model: "Capri", year: "older", variant: "Capri (8-cyl)" });
+    expect(capri?.classSources?.fs?.description).toBe("Capri (V8)");
+  });
+
+  it("does not let 'except' contradictions from the request's own text disqualify a self-consistent match", () => {
+    // Regression guard: excludedTokensIn now also recognizes "except X" (not just "excl."/
+    // "non-X") as an exclusion. A request that repeats the SAME "except" wording as the
+    // listing it's matching (e.g. selecting the Volvo S60R catalog entry verbatim) must not
+    // be treated as self-contradictory just because "except" now registers as an exclusion.
+    const variants = getVehicleVariants("Volvo", "S60", "2004").map((v) => v.value);
+    const s60rVariant = variants.find((value) => /S60R/i.test(value));
+    const s60r = getVehicleMapping({ make: "Volvo", model: "S60", year: "2004", variant: s60rVariant });
+    expect(s60r?.classSources?.gs?.description).toBe("S60R (except Polestar)");
+  });
+});
