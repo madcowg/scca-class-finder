@@ -42,7 +42,7 @@ export const RULE_GROUPS: RuleGroup[] = [
       {
         value: "street200",
         label: "Street tire: DOT, 200+ UTQG, 7/32 in new tread",
-        plainLabel: "Good street tire: DOT, good tread, recent model",
+        plainLabel: "200 treadwear DOT tire, any brand (not just Vitour)",
         description: "Street requires a DOT passenger tire with at least 200 UTQG, at least 7/32 in molded tread depth when new, and a current or prior-two-year SCCA Tire Guide listing. In Street Touring, maximum section width is class-dependent: 225, 245, 255, 265, 295, or 315 mm; SST is unlimited.",
         allowedCategories: ALL,
         section: "13.3"
@@ -50,7 +50,7 @@ export const RULE_GROUPS: RuleGroup[] = [
       {
         value: "vitourP1",
         label: "Vitour Tempesta P1 / P1+ (Xtreme Street exception)",
-        plainLabel: "Vitour P1 tires for Xtreme Street class only",
+        plainLabel: "Vitour Tempesta P1/P1+ only, not other Vitour models (Xtreme Street only)",
         description: "Section 21 expressly permits the Vitour Tempesta P1 and P1+ in Xtreme Street. They do not satisfy this app's normal Street or Street Touring tire path unless the tire independently meets Section 13.3.",
         allowedCategories: SP_PLUS,
         section: "21.4"
