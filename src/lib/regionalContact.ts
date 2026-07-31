@@ -75,6 +75,34 @@ export function buildRegionalContactDraft(
   };
 }
 
+export function buildClassificationClarificationDraft(
+  name: string,
+  selection: VehicleSelection,
+  build: BuildProfile
+): RegionalContactDraft {
+  const cleanName = name.trim().replace(/\s+/g, " ") || "[your name]";
+  const vehicle = vehicleSelectionLabel(selection) || "vehicle details not entered yet";
+  const modifications = summarizeBuild(build);
+  const buildDescription =
+    modifications === "stock"
+      ? "that is stock"
+      : `with these modifications: ${modifications}`;
+
+  return {
+    subject: "Solo classification help needed",
+    body: [
+      "Hello,",
+      "",
+      `I'm trying to classify my ${vehicle} ${buildDescription} for autocross using the SCCA Solo Class Finder tool, but it could not find an official Appendix A placement for this exact vehicle. Could you help me confirm which class it should run in?`,
+      "",
+      "Respectfully,",
+      cleanName
+    ].join("\n"),
+    vehicle,
+    modifications
+  };
+}
+
 export function buildMailto(email: string, draft: RegionalContactDraft): string {
   return `mailto:${email}?subject=${encodeURIComponent(draft.subject)}&body=${encodeURIComponent(draft.body)}`;
 }

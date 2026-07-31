@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   SCCA_REGION_LOCATOR_URL,
+  buildClassificationClarificationDraft,
   buildMailto,
   buildRegionalContactDraft,
   resolveRegionalContact
@@ -11,16 +12,20 @@ interface Props {
   selection: VehicleSelection;
   build: BuildProfile;
   onClose: () => void;
+  reason?: "general" | "classification";
 }
 
-export function RegionalContactPanel({ selection, build, onClose }: Props) {
+export function RegionalContactPanel({ selection, build, onClose, reason = "general" }: Props) {
   const [name, setName] = useState("");
   const [zip, setZip] = useState("");
   const [copyStatus, setCopyStatus] = useState("Copy prepared message");
   const route = resolveRegionalContact(zip);
   const draft = useMemo(
-    () => buildRegionalContactDraft(name, selection, build),
-    [name, selection, build]
+    () =>
+      reason === "classification"
+        ? buildClassificationClarificationDraft(name, selection, build)
+        : buildRegionalContactDraft(name, selection, build),
+    [reason, name, selection, build]
   );
   const nameReady = Boolean(name.trim());
   const preparedMessage = `Subject: ${draft.subject}\n\n${draft.body}`;
@@ -50,8 +55,9 @@ export function RegionalContactPanel({ selection, build, onClose }: Props) {
           <p className="eyebrow">Regional support</p>
           <h2 id="contact-title">Contact a Solo chair</h2>
           <p>
-            Enter your name and ZIP. We will prepare a message with the vehicle and build
-            currently shown in the assistant.
+            {reason === "classification"
+              ? "This vehicle has no automatic result. Enter your name and ZIP and we will prepare a message asking your regional Solo chair to confirm its class."
+              : "Enter your name and ZIP. We will prepare a message with the vehicle and build currently shown in the assistant."}
           </p>
         </div>
 

@@ -23,6 +23,7 @@ import { RuleLedger } from "./RuleLedger";
 interface Props {
   selection: VehicleSelection;
   result: ClassificationResult;
+  onRequestClarification?: () => void;
 }
 
 const HIDDEN_MESSAGE_PATTERNS = [
@@ -152,7 +153,7 @@ function ClassificationReason({
   );
 }
 
-export function ResultPanel({ selection, result }: Props) {
+export function ResultPanel({ selection, result, onRequestClarification }: Props) {
   const [proRequested, setProRequested] = useState(false);
   const vehicleName = vehicleSelectionLabel(selection);
   const nationalHistory = getNationalCompetitionHistory(selection);
@@ -214,6 +215,11 @@ export function ResultPanel({ selection, result }: Props) {
                 ? `${vehicleName || "This vehicle"} is eligible for a separately governed supplemental path.`
                 : `${vehicleName || "Choose an exact vehicle"} does not currently have a safe automatic result.`}
             </p>
+            {!supplementalOnly && onRequestClarification && (
+              <button className="primary-button" type="button" onClick={onRequestClarification}>
+                Ask my regional Solo chair
+              </button>
+            )}
           </>
         )}
 

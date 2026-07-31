@@ -66,6 +66,7 @@ export default function App() {
   const [activeStep, setActiveStep] = useState<Step>(initial.step);
   const [shareLabel, setShareLabel] = useState("Share my results");
   const [contactOpen, setContactOpen] = useState(false);
+  const [contactReason, setContactReason] = useState<"general" | "classification">("general");
 
   const result = useMemo(
     () => classifyVehicle(selection, build),
@@ -133,7 +134,10 @@ export default function App() {
             type="button"
             aria-expanded={contactOpen}
             aria-controls="contact-panel"
-            onClick={() => setContactOpen((open) => !open)}
+            onClick={() => {
+              setContactReason("general");
+              setContactOpen((open) => !open);
+            }}
           >
             Contact regional chair
           </button>
@@ -157,6 +161,7 @@ export default function App() {
         <RegionalContactPanel
           selection={selection}
           build={build}
+          reason={contactReason}
           onClose={() => setContactOpen(false)}
         />
       )}
@@ -233,7 +238,14 @@ export default function App() {
 
           {activeStep === 4 && (
             <div className="input-column">
-              <ResultPanel selection={selection} result={result} />
+              <ResultPanel
+                selection={selection}
+                result={result}
+                onRequestClarification={() => {
+                  setContactReason("classification");
+                  setContactOpen(true);
+                }}
+              />
             </div>
           )}
           </div>
