@@ -149,31 +149,32 @@ export default function App() {
           </section>
         )}
 
-        <nav className="progress-nav" aria-label="Classification steps">
-          {[
-            [1, "Vehicle"],
-            [2, "Build"],
-            [3, "Review"],
-            [4, "Result"]
-          ].map(([step, title]) => {
-            const stepNumber = step as Step;
-            return (
-              <button
-                className={activeStep === stepNumber ? "progress-step active" : "progress-step"}
-                type="button"
-                key={stepNumber}
-                disabled={stepNumber > activeStep}
-                aria-current={activeStep === stepNumber ? "step" : undefined}
-                onClick={() => goToStep(stepNumber)}
-              >
-                <span>{stepNumber}</span>
-                <strong>{title}</strong>
-              </button>
-            );
-          })}
-        </nav>
+        <div className="content-grid">
+          <nav className="progress-nav" aria-label="Classification steps">
+            {[
+              [1, "Vehicle"],
+              [2, "Build"],
+              [3, "Review"],
+              [4, "Result"]
+            ].map(([step, title]) => {
+              const stepNumber = step as Step;
+              return (
+                <button
+                  className={activeStep === stepNumber ? "progress-step active" : "progress-step"}
+                  type="button"
+                  key={stepNumber}
+                  disabled={stepNumber > activeStep}
+                  aria-current={activeStep === stepNumber ? "step" : undefined}
+                  onClick={() => goToStep(stepNumber)}
+                >
+                  <span>{stepNumber}</span>
+                  <strong>{title}</strong>
+                </button>
+              );
+            })}
+          </nav>
 
-        <div className="workspace">
+          <div className="workspace">
           {activeStep === 1 && (
             <div className="input-column">
               <VehicleSelector
@@ -212,6 +213,7 @@ export default function App() {
               <ResultPanel selection={selection} result={result} />
             </div>
           )}
+          </div>
         </div>
       </main>
 
