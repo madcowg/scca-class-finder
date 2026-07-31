@@ -674,8 +674,8 @@ footer p { margin: 0; }
 
 @media (max-width: 520px) {
   .site-header { display: grid; gap: 10px; }
-  .header-actions { justify-content: flex-start; gap: 5px; }
-  .header-link, .secondary-button, .contact-button { min-height: 32px; padding: 5px 7px; font-size: 11px; }
+  .header-actions { justify-content: flex-start; gap: 2px; }
+  .header-link, .secondary-button, .contact-button { min-height: 32px; padding: 6px 4px; font-size: 11px; white-space: nowrap; }
   .brand strong { font-size: 17px; }
   main { padding-inline: 11px; }
   .intro-band { padding: 14px 16px; border-radius: 12px; }
