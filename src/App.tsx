@@ -8,6 +8,7 @@ import { VehicleSelector } from "./components/VehicleSelector";
 import { buildBugReportUrl } from "./lib/bugReport";
 import { classifyVehicle } from "./lib/classifier";
 import { DEFAULT_BUILD } from "./lib/rules";
+import { shortenUrl } from "./lib/shortLink";
 import { getVehicleVariants, resolveVehicleSelection } from "./lib/vehicleData";
 import type { BuildProfile, VehicleSelection } from "./lib/types";
 
@@ -114,8 +115,15 @@ export default function App() {
 
   const shareResults = async () => {
     const url = buildShareUrl(4);
+    setShareLabel("Shortening...");
+    let linkToCopy = url.toString();
     try {
-      await navigator.clipboard.writeText(url.toString());
+      linkToCopy = await shortenUrl(linkToCopy);
+    } catch {
+      // Shortener unreachable or errored; fall back to the full link.
+    }
+    try {
+      await navigator.clipboard.writeText(linkToCopy);
       setShareLabel("Copied");
       window.setTimeout(() => setShareLabel("Share my results"), 1500);
     } catch {
