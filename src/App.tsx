@@ -5,6 +5,7 @@ import { BuildEditor } from "./components/BuildEditor";
 import { RegionalContactPanel } from "./components/RegionalContactPanel";
 import { ResultPanel } from "./components/ResultPanel";
 import { VehicleSelector } from "./components/VehicleSelector";
+import { buildBugReportUrl } from "./lib/bugReport";
 import { classifyVehicle } from "./lib/classifier";
 import { DEFAULT_BUILD } from "./lib/rules";
 import { getVehicleVariants, resolveVehicleSelection } from "./lib/vehicleData";
@@ -15,9 +16,14 @@ type Step = 1 | 2 | 3 | 4;
 interface SavedState {
   selection: VehicleSelection;
   build: BuildProfile;
+  step: Step;
 }
 
 const EMPTY_SELECTION: VehicleSelection = { make: "", model: "", year: "" };
+
+function isStep(value: unknown): value is Step {
+  return value === 1 || value === 2 || value === 3 || value === 4;
+}
 
 function readInitialState(): SavedState {
   const params = new URLSearchParams(window.location.search);
@@ -25,7 +31,8 @@ function readInitialState(): SavedState {
   if (!encoded) {
     return {
       selection: EMPTY_SELECTION,
-      build: DEFAULT_BUILD
+      build: DEFAULT_BUILD,
+      step: 1
     };
   }
 
@@ -40,12 +47,14 @@ function readInitialState(): SavedState {
         notListed: parsed.selection?.notListed,
         manualDescription: parsed.selection?.manualDescription
       }),
-      build: { ...DEFAULT_BUILD, ...(parsed.build ?? {}) }
+      build: { ...DEFAULT_BUILD, ...(parsed.build ?? {}) },
+      step: isStep(parsed.step) ? parsed.step : 1
     };
   } catch {
     return {
       selection: EMPTY_SELECTION,
-      build: DEFAULT_BUILD
+      build: DEFAULT_BUILD,
+      step: 1
     };
   }
 }
@@ -54,8 +63,8 @@ export default function App() {
   const initial = useMemo(readInitialState, []);
   const [selection, setSelection] = useState<VehicleSelection>(initial.selection);
   const [build, setBuild] = useState<BuildProfile>(initial.build);
-  const [activeStep, setActiveStep] = useState<Step>(1);
-  const [shareLabel, setShareLabel] = useState("Copy share link");
+  const [activeStep, setActiveStep] = useState<Step>(initial.step);
+  const [shareLabel, setShareLabel] = useState("Share my results");
   const [contactOpen, setContactOpen] = useState(false);
 
   const result = useMemo(
@@ -79,19 +88,26 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const copyShareLink = async () => {
-    const state: SavedState = { selection, build };
+  const buildShareUrl = (step: Step) => {
+    const state: SavedState = { selection, build, step };
     const url = new URL(window.location.href);
     url.searchParams.set("build", encodeURIComponent(JSON.stringify(state)));
+    return url;
+  };
+
+  const shareResults = async () => {
+    const url = buildShareUrl(4);
     try {
       await navigator.clipboard.writeText(url.toString());
       setShareLabel("Copied");
-      window.setTimeout(() => setShareLabel("Copy share link"), 1500);
+      window.setTimeout(() => setShareLabel("Share my results"), 1500);
     } catch {
       window.history.replaceState({}, "", url);
       setShareLabel("Link added to address bar");
     }
   };
+
+  const bugReportUrl = buildBugReportUrl(selection, build, result, buildShareUrl(activeStep).toString());
 
   return (
     <div className="app-shell">
@@ -121,12 +137,19 @@ export default function App() {
           >
             Contact regional chair
           </button>
-          <button className="secondary-button" type="button" onClick={copyShareLink}>
-            {shareLabel}
-          </button>
-          <span className="sr-only" aria-live="polite">
-            {shareLabel === "Copy share link" ? "" : shareLabel}
-          </span>
+          <a className="header-link" href={bugReportUrl} target="_blank" rel="noreferrer">
+            Report a bug
+          </a>
+          {activeStep === 4 && (
+            <>
+              <button className="secondary-button" type="button" onClick={shareResults}>
+                {shareLabel}
+              </button>
+              <span className="sr-only" aria-live="polite">
+                {shareLabel === "Share my results" ? "" : shareLabel}
+              </span>
+            </>
+          )}
         </div>
       </header>
 
