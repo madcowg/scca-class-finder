@@ -171,7 +171,7 @@ export default function App() {
           <section className="intro-band">
             <div>
               <p className="eyebrow">SCCA Solo classification assistant</p>
-              <h1>Find where you belong before sign up!</h1>
+              <h1>Find where you belong before sign up</h1>
               <p className="intro-copy">It's ok not to know!</p>
             </div>
           </section>
