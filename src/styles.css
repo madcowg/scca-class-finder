@@ -33,9 +33,14 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  background:
+  background-color: var(--bg);
+  background-image:
     linear-gradient(135deg, rgba(200, 16, 46, 0.035), transparent 38rem),
-    var(--bg);
+    url("./assets/car-brands-banner-light.png");
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 0, center 96px;
+  background-size: auto, 1920px 270px;
+  background-attachment: scroll, fixed;
   color: var(--ink);
   font-size: 16px;
   line-height: 1.5;
@@ -620,6 +625,9 @@ footer p { margin: 0; }
 }
 
 @media (max-width: 800px) {
+  body {
+    background-image: linear-gradient(135deg, rgba(200, 16, 46, 0.035), transparent 38rem);
+  }
   .site-header { align-items: flex-start; min-height: 70px; padding: 11px 15px; }
   .brand small, .data-badge { display: none; }
   .header-actions { gap: 7px; }
