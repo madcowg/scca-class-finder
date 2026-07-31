@@ -19,10 +19,26 @@ interface SavedState {
   step: Step;
 }
 
+interface SharedStatePayload {
+  selection: VehicleSelection;
+  build: Partial<BuildProfile>;
+  step: Step;
+}
+
 const EMPTY_SELECTION: VehicleSelection = { make: "", model: "", year: "" };
 
 function isStep(value: unknown): value is Step {
   return value === 1 || value === 2 || value === 3 || value === 4;
+}
+
+function buildDiff(build: BuildProfile): Partial<BuildProfile> {
+  const diff: Partial<BuildProfile> = {};
+  for (const key of Object.keys(build) as (keyof BuildProfile)[]) {
+    if (build[key] !== DEFAULT_BUILD[key]) {
+      (diff as Record<string, unknown>)[key] = build[key];
+    }
+  }
+  return diff;
 }
 
 function readInitialState(): SavedState {
@@ -37,7 +53,7 @@ function readInitialState(): SavedState {
   }
 
   try {
-    const parsed = JSON.parse(decodeURIComponent(encoded)) as Partial<SavedState>;
+    const parsed = JSON.parse(encoded) as Partial<SharedStatePayload>;
     return {
       selection: resolveVehicleSelection({
         make: parsed.selection?.make ?? EMPTY_SELECTION.make,
@@ -90,9 +106,9 @@ export default function App() {
   };
 
   const buildShareUrl = (step: Step) => {
-    const state: SavedState = { selection, build, step };
+    const payload: SharedStatePayload = { selection, build: buildDiff(build), step };
     const url = new URL(window.location.href);
-    url.searchParams.set("build", encodeURIComponent(JSON.stringify(state)));
+    url.searchParams.set("build", JSON.stringify(payload));
     return url;
   };
 
