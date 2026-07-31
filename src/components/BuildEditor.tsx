@@ -105,12 +105,7 @@ export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
 
   return (
     <section className="panel" id="build-step" aria-labelledby="build-title">
-      <div className="panel-heading">
-        <div className="step-number">2</div>
-        <div>
-          <h2 id="build-title">Build</h2>
-        </div>
-      </div>
+      <h2 id="build-title" className="sr-only">Build</h2>
 
       <label className="stock-toggle">
         <input
@@ -216,7 +211,7 @@ export function BuildEditor({ value, onChange, onBack, onNext }: Props) {
           Vehicle
         </button>
         <button className="primary-button" type="button" onClick={onNext}>
-          Review
+          Next
         </button>
       </div>
     </section>

@@ -62,12 +62,7 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
 
   return (
     <section className="panel vehicle-panel" id="vehicle-step" aria-labelledby="vehicle-title">
-      <div className="panel-heading">
-        <div className="step-number">1</div>
-        <div>
-          <h2 id="vehicle-title">Vehicle</h2>
-        </div>
-      </div>
+      <h2 id="vehicle-title" className="sr-only">Vehicle</h2>
 
       <div className="vehicle-grid">
         <label htmlFor="vehicle-year">
@@ -175,7 +170,7 @@ export function VehicleSelector({ value, onChange, onNext, canAdvance }: Props) 
 
       <div className="wizard-actions wizard-actions-end">
         <button className="primary-button" type="button" onClick={onNext} disabled={!canAdvance}>
-          Build
+          Next
         </button>
       </div>
     </section>

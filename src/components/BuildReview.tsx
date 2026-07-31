@@ -30,12 +30,7 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
 
   return (
     <section className="panel review-panel" id="review-step" aria-labelledby="review-title">
-      <div className="panel-heading">
-        <div className="step-number">3</div>
-        <div>
-          <h2 id="review-title">Review</h2>
-        </div>
-      </div>
+      <h2 id="review-title" className="sr-only">Review</h2>
 
       <div className="review-vehicle">
         <span className="field-title">Vehicle</span>
@@ -76,7 +71,7 @@ export function BuildReview({ selection, build, onBack, onNext }: Props) {
           Build
         </button>
         <button className="primary-button" type="button" onClick={onNext}>
-          Result
+          Next
         </button>
       </div>
     </section>
