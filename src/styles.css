@@ -422,6 +422,20 @@ input { padding-right: 14px; }
 .result-hero { position: relative; overflow: hidden; padding: 24px; color: #fff; background: var(--surface-dark); }
 .result-hero::after { content: ""; position: absolute; right: -45px; top: -55px; width: 185px; height: 185px; opacity: .11; pointer-events: none; background: repeating-conic-gradient(#fff 0 25%, transparent 0 50%) 0 0 / 26px 26px; transform: rotate(14deg); }
 .result-kicker { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; color: #c9c9c9; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; font-weight: 900; }
+.restart-button {
+  appearance: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 7px 14px;
+}
+.restart-button:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.5); }
 .confidence-badge { padding: 6px 10px; font-size: 10px; letter-spacing: .08em; }
 .confidence-high .confidence-badge { color: #8cdb9f; border-color: #3d8b54; }
 .confidence-limited .confidence-badge { color: #ffd37b; border-color: #9a762d; }

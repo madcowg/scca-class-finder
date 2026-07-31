@@ -24,6 +24,7 @@ interface Props {
   selection: VehicleSelection;
   result: ClassificationResult;
   onRequestClarification?: () => void;
+  onRestart?: () => void;
 }
 
 const HIDDEN_MESSAGE_PATTERNS = [
@@ -153,7 +154,7 @@ function ClassificationReason({
   );
 }
 
-export function ResultPanel({ selection, result, onRequestClarification }: Props) {
+export function ResultPanel({ selection, result, onRequestClarification, onRestart }: Props) {
   const [proRequested, setProRequested] = useState(false);
   const vehicleName = vehicleSelectionLabel(selection);
   const nationalHistory = getNationalCompetitionHistory(selection);
@@ -179,6 +180,11 @@ export function ResultPanel({ selection, result, onRequestClarification }: Props
       <div className={`result-hero confidence-${result.confidence}`}>
         <div className="result-kicker">
           <span>Current result</span>
+          {onRestart && (
+            <button className="restart-button" type="button" onClick={onRestart}>
+              Restart
+            </button>
+          )}
         </div>
 
         {result.selectedClass && result.selectedCategory ? (

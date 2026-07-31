@@ -269,6 +269,13 @@ export default function App() {
                   setContactReason("classification");
                   setContactOpen(true);
                 }}
+                onRestart={() => {
+                  setSelection(EMPTY_SELECTION);
+                  setBuild(DEFAULT_BUILD);
+                  setActiveStep(1);
+                  window.history.replaceState({}, "", window.location.pathname);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
               />
             </div>
           )}
