@@ -36,11 +36,12 @@ body {
   background-color: var(--bg);
   background-image:
     linear-gradient(135deg, rgba(200, 16, 46, 0.035), transparent 38rem),
-    url("./assets/car-brands-banner-light.png");
-  background-repeat: no-repeat, no-repeat;
-  background-position: 0 0, center 96px;
-  background-size: auto, 1920px 270px;
-  background-attachment: scroll, fixed;
+    url("./assets/car-brands-sidebar-light.png"),
+    url("./assets/car-brands-sidebar-light.png");
+  background-repeat: no-repeat, repeat-y, repeat-y;
+  background-position: 0 0, calc(50vw - 1112px) 96px, calc(50vw + 692px) 96px;
+  background-size: auto, 420px 1080px, 420px 1080px;
+  background-attachment: scroll, fixed, fixed;
   color: var(--ink);
   font-size: 16px;
   line-height: 1.5;
@@ -640,7 +641,13 @@ footer p { margin: 0; }
 
 @media (max-width: 800px) {
   body {
-    background-image: linear-gradient(135deg, rgba(200, 16, 46, 0.035), transparent 38rem);
+    background-image:
+      linear-gradient(135deg, rgba(200, 16, 46, 0.035), transparent 38rem),
+      url("./assets/car-brands-hero-light.png");
+    background-repeat: no-repeat, repeat-y;
+    background-position: 0 0, top center;
+    background-size: auto, 100% auto;
+    background-attachment: scroll, scroll;
   }
   .site-header { align-items: flex-start; min-height: 70px; padding: 11px 15px; }
   .brand small, .data-badge { display: none; }
