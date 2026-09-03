@@ -12,3 +12,9 @@ vite.config.d.ts
 .env.*
 !.env.example
 logs/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
